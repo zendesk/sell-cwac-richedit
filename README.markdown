@@ -116,6 +116,10 @@ to point to your own copy of ActionBarSherlock.
 (as the world patiently awaits Android library projects being able to be
 packaged as JARs...)
 
+This project should work on API Level 7 and higher, except for any portions that
+may be noted otherwise in this document. Please report bugs if you find features
+that do not work on API Level 7 and are not noted as requiring a higher version.
+
 Version
 -------
 This is version v0.2.0 of this module, meaning it is out of its months-long
