@@ -1,5 +1,5 @@
 /***
-  Copyright (c) 2012 CommonsWare, LLC
+  Copyright (c) 2012-2014 CommonsWare, LLC
   
   Licensed under the Apache License, Version 2.0 (the "License"); you may
   not use this file except in compliance with the License. You may obtain
@@ -14,15 +14,12 @@
 
 package com.commonsware.cwac.richedit;
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import java.util.HashMap;
 
 public class EditorActionModeCallback {
   protected int menuResource=0;
@@ -47,7 +44,6 @@ public class EditorActionModeCallback {
     chains.put(menuItemId, toChainTo);
   }
 
-  @TargetApi(11)
   public static class Native extends EditorActionModeCallback implements
       ActionMode.Callback {
     Activity host=null;
@@ -61,6 +57,13 @@ public class EditorActionModeCallback {
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
       MenuInflater inflater=mode.getMenuInflater();
+
+      MenuItem item=menu.findItem(android.R.id.selectAll);
+
+      if (item != null) {
+        item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM
+            | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+      }
 
       inflater.inflate(menuResource, menu);
       listener.setIsShowing(true);
@@ -93,83 +96,9 @@ public class EditorActionModeCallback {
 
         return(true);
       }
-      
-      mode.finish();
-
-      return(listener.doAction(item.getItemId()));
-    }
-  }
-
-  public static class ABS extends EditorActionModeCallback implements
-      com.actionbarsherlock.view.ActionMode.Callback {
-    Activity host=null;
-
-    public ABS(Activity host, int menuResource, RichEditText editor,
-               EditorActionModeListener listener) {
-      super(menuResource, editor, listener);
-      this.host=host;
-    }
-
-    @Override
-    public boolean onCreateActionMode(com.actionbarsherlock.view.ActionMode mode,
-                                      com.actionbarsherlock.view.Menu menu) {
-      com.actionbarsherlock.view.MenuInflater inflater=
-          mode.getMenuInflater();
-
-      inflater.inflate(menuResource, menu);
-      listener.setIsShowing(true);
-
-      return(true);
-    }
-
-    @Override
-    public boolean onPrepareActionMode(com.actionbarsherlock.view.ActionMode mode,
-                                       com.actionbarsherlock.view.Menu menu) {
-      if (selection != null) {
-        selection.apply(editor);
-      }
-
-      return(false);
-    }
-
-    @Override
-    public void onDestroyActionMode(com.actionbarsherlock.view.ActionMode mode) {
-      listener.setIsShowing(false);
-    }
-
-    @Override
-    public boolean onActionItemClicked(com.actionbarsherlock.view.ActionMode mode,
-                                       com.actionbarsherlock.view.MenuItem item) {
-      EditorActionModeCallback next=chains.get(item.getItemId());
-
-      if (next != null) {
-        next.setSelection(new Selection(editor));
-
-        // nasty reflection hack to get around the fact
-        // that there is no inheritance hierarchy for
-        // Sherlock*Activity
-
-        Method method;
-        try {
-          method=
-              host.getClass()
-                  .getMethod("startActionMode",
-                             com.actionbarsherlock.view.ActionMode.Callback.class);
-          method.invoke(host, next);
-        }
-        catch (Exception e) {
-          Log.e(getClass().getSimpleName(),
-                "Exception starting action mode", e);
-        }
-
-        // host.startActionMode((EditorActionModeCallback.ABS)next);
-        mode.finish();
-
-        return(true);
-      }
-      
-      mode.finish();
-
+      //
+      // mode.finish();
+      //
       return(listener.doAction(item.getItemId()));
     }
   }

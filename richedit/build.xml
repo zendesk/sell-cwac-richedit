@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="RichTextEditor" default="help">
 
-    <!-- The local.properties file is created and updated by the 'android' tool.
+	<!-- The local.properties file is created and updated by the 'android' tool.
          It contains the path to the SDK. It should *NOT* be checked into
          Version Control Systems. -->
-    <property file="local.properties" />
+	<property file="local.properties" />
 
-    <!-- The ant.properties file can be created by you. It is only edited by the
+	<!-- The ant.properties file can be created by you. It is only edited by the
          'android' tool to add properties to it.
          This is the place to change some Ant specific build properties.
          Here are some properties you may want to change/update:
@@ -26,9 +26,9 @@
          application and should be checked into Version Control Systems.
 
          -->
-    <property file="ant.properties" />
+	<property file="ant.properties" />
 
-    <!-- The project.properties file is created and updated by the 'android'
+	<!-- The project.properties file is created and updated by the 'android'
          tool, as well as ADT.
 
          This contains project specific properties such as project target, and library
@@ -37,18 +37,15 @@
 
          This file is an integral part of the build system for your
          application and should be checked into Version Control Systems. -->
-    <loadproperties srcFile="project.properties" />
+	<loadproperties srcFile="project.properties" />
 
-    <!-- quick check on sdk.dir -->
-    <fail
-            message="sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through an env var"
-            unless="sdk.dir"
-    />
+	<!-- quick check on sdk.dir -->
+	<fail message="sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through an env var" unless="sdk.dir" />
 
 
-<!-- extension targets. Uncomment the ones where you want to do custom work
+	<!-- extension targets. Uncomment the ones where you want to do custom work
      in between standard targets -->
-<!--
+	<!--
     <target name="-pre-build">
     </target>
     <target name="-pre-compile">
@@ -61,7 +58,7 @@
     </target>
 -->
 
-    <!-- Import the actual build file.
+	<!-- Import the actual build file.
 
          To customize existing targets, there are two options:
          - Customize only one target:
@@ -79,7 +76,35 @@
          In all cases you must update the value of version-tag below to read 'custom' instead of an integer,
          in order to avoid having your file be overridden by tools such as "android update project"
     -->
-    <!-- version-tag: 1 -->
-    <import file="${sdk.dir}/tools/ant/build.xml" />
+	<!-- version-tag: custom -->
+	<import file="${sdk.dir}/tools/ant/build.xml" />
+
+	<target name="jar" depends="release">
+		<delete file="bin/CWAC-RichEdit.jar" />
+		<jar destfile="bin/CWAC-RichEdit.jar">
+			<fileset dir="bin/classes">
+				<exclude name="**/BuildConfig.class" />
+        <exclude name="**/R.class" />
+        <exclude name="**/R$*.class" />
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="dist" depends="jar">
+		<copy todir="/tmp/CWAC-RichEdit/libs">
+			<fileset dir="libs/" />
+		</copy>
+		<copy todir="/tmp/CWAC-RichEdit/res">
+			<fileset dir="res/" />
+		</copy>
+		<copy file="bin/CWAC-RichEdit.jar" todir="/tmp/CWAC-RichEdit/libs" />
+		<copy file="AndroidManifest.xml" todir="/tmp/CWAC-RichEdit" />
+		<copy file="build.xml" todir="/tmp/CWAC-RichEdit" />
+		<copy file="project.properties" todir="/tmp/CWAC-RichEdit" />
+		<copy file="LICENSE" todir="/tmp/CWAC-RichEdit" />
+		<mkdir dir="/tmp/CWAC-RichEdit/src" />
+		<zip destfile="/tmp/CWAC-RichEdit.zip" basedir="/tmp/" includes="CWAC-RichEdit/**" whenempty="create" />
+		<delete dir="/tmp/CWAC-RichEdit" />
+	</target>
 
 </project>

@@ -14,11 +14,11 @@
 
 package com.commonsware.cwac.richedit.demo;
 
+import android.app.Activity;
 import android.os.Bundle;
-import com.actionbarsherlock.app.SherlockActivity;
 import com.commonsware.cwac.richedit.RichEditText;
 
-public class RichTextEditorDemoActivity extends SherlockActivity {
+public class RichTextEditorDemoActivity extends Activity {
   RichEditText editor=null;
   
   @Override

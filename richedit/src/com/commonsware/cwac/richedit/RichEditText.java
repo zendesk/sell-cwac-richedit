@@ -1,5 +1,5 @@
 /***
-  Copyright (c) 2011-2012 CommonsWare, LLC
+  Copyright (c) 2011-2014 CommonsWare, LLC
   
   Licensed under the Apache License, Version 2.0 (the "License"); you may
   not use this file except in compliance with the License. You may obtain
@@ -14,7 +14,6 @@
 
 package com.commonsware.cwac.richedit;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Typeface;
@@ -25,10 +24,8 @@ import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.EditText;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,9 +61,7 @@ public class RichEditText extends EditText implements
   private OnSelectionChangedListener selectionListener=null;
   private boolean actionModeIsShowing=false;
   private EditorActionModeCallback.Native mainMode=null;
-  private EditorActionModeCallback.ABS sherlockEntryMode=null;
   private boolean forceActionMode=false;
-  private com.actionbarsherlock.view.ActionMode sherlockActionMode=null;
   private boolean keyboardShortcuts=true;
 
   /*
@@ -160,22 +155,8 @@ public class RichEditText extends EditText implements
         }, 500);
       }
     }
-    else {
-      if (sherlockEntryMode != null) {
-        if (start == end) {
-          if (sherlockActionMode != null) {
-            sherlockActionMode.finish();
-            sherlockActionMode=null;
-          }
-        }
-        else {
-          showSherlockEntryMode();
-        }
-      }
-    }
   }
 
-  @TargetApi(11)
   @Override
   public boolean onKeyUp(int keyCode, KeyEvent event) {
     if (keyboardShortcuts
@@ -332,11 +313,11 @@ public class RichEditText extends EditText implements
 
       return(true);
     }
-    else if (itemId == android.R.id.selectAll
-        || itemId == android.R.id.cut || itemId == android.R.id.copy
-        || itemId == android.R.id.paste) {
-      onTextContextMenuItem(itemId);
-    }
+//    else if (itemId == android.R.id.selectAll
+//        || itemId == android.R.id.cut || itemId == android.R.id.copy
+//        || itemId == android.R.id.paste) {
+//      onTextContextMenuItem(itemId);
+//    }
 
     return(false);
   }
@@ -349,27 +330,6 @@ public class RichEditText extends EditText implements
   public void enableActionModes(boolean forceActionMode) {
     this.forceActionMode=forceActionMode;
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-      enableNativeActionModes();
-    }
-    else {
-      enableSherlockActionModes();
-    }
-  }
-
-  @TargetApi(11)
-  public void disableActionModes() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-      setCustomSelectionActionModeCallback(null);
-      mainMode=null;
-    }
-    else {
-      sherlockEntryMode=null;
-    }
-  }
-
-  @TargetApi(11)
-  private void enableNativeActionModes() {
     EditorActionModeCallback.Native effectsMode=
         new EditorActionModeCallback.Native(
                                             (Activity)getContext(),
@@ -399,64 +359,12 @@ public class RichEditText extends EditText implements
 
     entryMode.addChain(R.id.cwac_richedittext_format, mainMode);
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-      setCustomSelectionActionModeCallback(entryMode);
-    }
+    setCustomSelectionActionModeCallback(entryMode);
   }
 
-  private void enableSherlockActionModes() {
-    EditorActionModeCallback effectsMode=
-        new EditorActionModeCallback.ABS(
-                                         (Activity)getContext(),
-                                         R.menu.cwac_richedittext_effects,
-                                         this, this);
-
-    EditorActionModeCallback fontsMode=
-        new EditorActionModeCallback.ABS(
-                                         (Activity)getContext(),
-                                         R.menu.cwac_richedittext_fonts,
-                                         this, this);
-
-    EditorActionModeCallback sherlockMainMode=
-        new EditorActionModeCallback.ABS((Activity)getContext(),
-                                         R.menu.cwac_richedittext_main,
-                                         this, this);
-
-    sherlockMainMode.addChain(R.id.cwac_richedittext_effects,
-                              effectsMode);
-    sherlockMainMode.addChain(R.id.cwac_richedittext_fonts, fontsMode);
-
-    sherlockEntryMode=
-        new EditorActionModeCallback.ABS(
-                                         (Activity)getContext(),
-                                         R.menu.cwac_richedittext_entry,
-                                         this, this);
-
-    sherlockEntryMode.addChain(R.id.cwac_richedittext_format,
-                               sherlockMainMode);
-  }
-
-  private void showSherlockEntryMode() {
-    if (!actionModeIsShowing) {
-      // nasty reflection hack to get around the fact
-      // that there is no inheritance hierarchy for
-      // Sherlock*Activity
-
-      Method method;
-      try {
-        method=
-            getContext().getClass()
-                        .getMethod("startActionMode",
-                                   com.actionbarsherlock.view.ActionMode.Callback.class);
-        sherlockActionMode=
-            (com.actionbarsherlock.view.ActionMode)method.invoke(getContext(),
-                                                                 sherlockEntryMode);
-      }
-      catch (Exception e) {
-        Log.e(getClass().getSimpleName(),
-              "Exception starting action mode", e);
-      }
-    }
+  public void disableActionModes() {
+    setCustomSelectionActionModeCallback(null);
+    mainMode=null;
   }
 
   /*

@@ -11,7 +11,7 @@ That's where `RichEditText` comes in.
 
 `RichEditText` is a drop-in replacement for `EditText` that:
 
-- Provides an action mode on Android 2.1+ that allows
+- Provides an action mode on Android 4.0+ that allows
 users to format selected pieces of text
 - Provides convenience methods to allow developers to 
 trigger formatting for selected text via other means
@@ -21,10 +21,38 @@ a `demo/` subdirectory containing a regular Android project
 with a couple of activities demonstrating the use of
 `RichEditText`.
 
+In addition to the documentation on this page,
+[partial JavaDocs are also available](http://javadocs.commonsware.com/cwac/richedit/index.html).
+
+This Android library project is available as an artifact for use
+with Gradle. To use that, add the following
+blocks to your `build.gradle` file:
+
+```groovy
+repositories {
+    maven {
+        url "https://repo.commonsware.com.s3.amazonaws.com"
+    }
+}
+
+dependencies {
+    compile 'com.commonsware.cwac:richedit:0.3.0'
+}
+```
+
+Or, if you cannot use SSL, use `http://repo.commonsware.com` for the repository
+URL.
+
+If you are not using Gradle, download or clone this repo, and add the `richedit/`
+project to your environment as an Android library project.
+
+**NOTE**: If you were using v0.2.0 with ActionBarSherlock, ActionBarSherlock
+support was removed from this project as of v0.3.0. Please remain on v0.2.0,
+or switch to the native API Level 11+ action bar (a.k.a., "15 is the new 10").
+
 Usage
 -----
-Add the project as a library project to your main project.
-Then, simply add `com.commonsware.cwac.richedit.RichEditText`
+Simply add `com.commonsware.cwac.richedit.RichEditText`
 widgets to your layout as needed:
 
 ```xml
@@ -40,6 +68,7 @@ widgets to your layout as needed:
 
 </com.commonsware.cwac.richedit.RichEditText>
 ```
+
 At this time, there are no custom attributes used by
 `RichEditText`.
 
@@ -55,13 +84,9 @@ First, you can call
 `enableActionModes()` on the `RichEditText`. This will add a "FORMAT"
 entry on the action mode that comes up when the user highlights some
 prose in the editor. Tapping that will allow the user to toggle various
-effects. This is easy to set up, but there are two significant limitations:
+effects. 
 
-1. If you intend to run on devices prior to API Level 11, you need to be
-using ActionBarSherlock, and your activity hosting the `RichEditText` needs
-to inherit from one of the Sherlock-flavored activiy classes.
-
-2. The action modes work so-so on phones at this time &mdash;
+The action modes work so-so on phones at this time &mdash;
 tablets work better. To get it to work on phones at all, you will need
 to include `android:imeOptions="flagNoExtractUi"` as an attribute on the
 `RichEditText`.
@@ -109,25 +134,18 @@ changes, so don't mess with them yet.
 
 Dependencies
 ------------
-This project depends upon [ActionBarSherlock](http://actionbarsherlock.com).
-If you check out this project, you will need to update your local configuration
-to point to your own copy of ActionBarSherlock.
-
-(as the world patiently awaits Android library projects being able to be
-packaged as JARs...)
+There are no third-party dependencies at this time.
 
 Version
 -------
-This is version v0.2.0 of this module, meaning it is out of its months-long
-slumber and is proceeding apace.
+This is version v0.3.0 of this module, meaning it is out of its years-long
+hibernation and is ready to rampage through downtown San Francisco (or other
+cities if you prefer).
 
 Demo
 ----
 In the `demo/` sub-project you will find
 a sample activity that demonstrates the use of `RichEditor`.
-
-In the `tests/` sub-project you will find a small unit test suite for
-exercising some of the effects.
 
 License
 -------
@@ -138,7 +156,8 @@ file.
 Questions
 ---------
 If you have questions regarding the use of this code, please post a question
-on [StackOverflow](http://stackoverflow.com/questions/ask) tagged with `commonsware` and `android`. Be sure to indicate
+on [StackOverflow](http://stackoverflow.com/questions/ask) tagged with `commonsware-cwac`
+and `android`. Be sure to indicate
 what CWAC module you are having issues with, and be sure to include source code 
 and stack traces if you are encountering crashes.
 
@@ -156,9 +175,15 @@ the fence may work, but it may not.
 
 Release Notes
 -------------
+- v0.3.0: removed ActionBarSherlock support, icon for FORMAT action mode item, fixed clipboard bug, added Gradle support
 - v0.2.0: added keyboard shortcuts for bold/italic/underline and test suite, bug fixes
 - v0.1.1: added `disableActionModes()` and fixed bug related to conditional action mode usage
 - v0.1: added action mode support using ActionBarSherlock for pre-Honeycomb devices
 - v0.0.3: removed `RichEditor`, replaced it with custom action modes
 - v0.0.2: added `RichEditor` and made various fixes
 - v0.0.1: initial release
+
+Who Made This?
+--------------
+<a href="http://commonsware.com">![CommonsWare](http://commonsware.com/images/logo.png)</a>
+
