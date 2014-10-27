@@ -13,14 +13,18 @@
   </item>
 		<item
 		android:id="@+id/cwac_richedittext_effects"
-		android:showAsAction="always|withText"
+		android:showAsAction="ifRoom|withText"
 		android:title="@string/effects">
 	</item>
 	<item
 		android:id="@+id/cwac_richedittext_fonts"
-		android:showAsAction="always|withText"
+		android:showAsAction="ifRoom|withText"
 		android:title="@string/fonts">
 	</item>
+    <item
+        android:id="@+id/cwac_richedittext_lists"
+        android:showAsAction="always|withText"
+        android:title="@string/lists" />
 <!--   <item -->
 <!--     android:id="@+id/cwac_richedittext_lines" -->
 <!--     android:showAsAction="always|withText" -->

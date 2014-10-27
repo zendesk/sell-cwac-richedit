@@ -14,6 +14,8 @@
 
 package com.commonsware.cwac.richedit;
 
+import com.futuresimple.base.richedit.text.style.ListSpan;
+
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Typeface;
@@ -26,6 +28,7 @@ import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.widget.EditText;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +58,8 @@ public class RichEditText extends EditText implements
       new SuperscriptEffect();
   public static final Effect<Boolean> SUBSCRIPT=new SubscriptEffect();
 
+  public static final Effect<ListSpan.Type> LIST = new ListEffect();
+
   private static final ArrayList<Effect<?>> EFFECTS=
       new ArrayList<Effect<?>>();
   private boolean isSelectionChanging=false;
@@ -78,6 +83,7 @@ public class RichEditText extends EditText implements
     EFFECTS.add(STRIKETHROUGH);
     EFFECTS.add(SUPERSCRIPT);
     EFFECTS.add(SUBSCRIPT);
+    EFFECTS.add(LIST);
 
     /*
      * Non-Boolean effects
@@ -318,6 +324,13 @@ public class RichEditText extends EditText implements
 //        || itemId == android.R.id.paste) {
 //      onTextContextMenuItem(itemId);
 //    }
+    else if (itemId == R.id.cwac_richedittext_ordered_list) {
+      applyEffect(LIST, ListSpan.Type.ORDERED);
+      return true;
+    } else if (itemId == R.id.cwac_richedittext_unordered_list) {
+      applyEffect(LIST, ListSpan.Type.UNORDERED);
+      return true;
+    }
 
     return(false);
   }
@@ -342,6 +355,14 @@ public class RichEditText extends EditText implements
                                             R.menu.cwac_richedittext_fonts,
                                             this, this);
 
+    final EditorActionModeCallback.Native listsMode =
+        new EditorActionModeCallback.Native(
+            (Activity) getContext(),
+            R.menu.cwac_richedittext_list,
+            this,
+            this
+        );
+
     mainMode=
         new EditorActionModeCallback.Native(
                                             (Activity)getContext(),
@@ -350,6 +371,7 @@ public class RichEditText extends EditText implements
 
     mainMode.addChain(R.id.cwac_richedittext_effects, effectsMode);
     mainMode.addChain(R.id.cwac_richedittext_fonts, fontsMode);
+    mainMode.addChain(R.id.cwac_richedittext_lists, listsMode);
 
     EditorActionModeCallback.Native entryMode=
         new EditorActionModeCallback.Native(
