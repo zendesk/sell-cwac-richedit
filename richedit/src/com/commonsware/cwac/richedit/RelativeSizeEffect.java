@@ -17,13 +17,16 @@ package com.commonsware.cwac.richedit;
 import android.text.Spannable;
 import android.text.style.RelativeSizeSpan;
 
-public class RelativeSizeEffect extends Effect<Float> {
+import java.util.Arrays;
+import java.util.List;
+
+public class RelativeSizeEffect extends Effect<Float, RelativeSizeSpan> {
+
+  private Float mProportion;
+
   @Override
   boolean existsInSelection(RichEditText editor) {
-    Selection selection=new Selection(editor);
-    Spannable str=editor.getText();
-
-    return(getRelativeSizeSpans(str, selection).length > 0);
+    return(!getAllEffectsFrom(editor.getText(), new Selection(editor)).isEmpty());
   }
 
   @Override
@@ -31,10 +34,11 @@ public class RelativeSizeEffect extends Effect<Float> {
     Selection selection=new Selection(editor);
     Spannable str=editor.getText();
     float max=0.0f;
-    RelativeSizeSpan[] spans=getRelativeSizeSpans(str, selection);
 
-    if (spans.length > 0) {
-      for (RelativeSizeSpan span : spans) {
+    final List<RelativeSizeSpan> effects = getAllEffectsFrom(str, selection);
+
+    if (!effects.isEmpty()) {
+      for (RelativeSizeSpan span : effects) {
         max=(max < span.getSizeChange() ? span.getSizeChange() : max);
       }
 
@@ -46,22 +50,30 @@ public class RelativeSizeEffect extends Effect<Float> {
 
   @Override
   void applyToSelection(RichEditText editor, Float proportion) {
+    mProportion = proportion;
     Selection selection=new Selection(editor);
     Spannable str=editor.getText();
 
-    for (RelativeSizeSpan span : getRelativeSizeSpans(str, selection)) {
+    final List<RelativeSizeSpan> effects = getAllEffectsFrom(str, selection);
+    for (RelativeSizeSpan span : effects) {
       str.removeSpan(span);
     }
 
     if (proportion != null) {
-      str.setSpan(new RelativeSizeSpan(proportion), selection.start,
+      str.setSpan(newEffect(), selection.start,
+                  // TODO: not needed for now, but we have to consider the span type !!!
                   selection.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
   }
 
-  private RelativeSizeSpan[] getRelativeSizeSpans(Spannable str,
-                                                  Selection selection) {
-    return(str.getSpans(selection.start, selection.end,
-                        RelativeSizeSpan.class));
+  @Override
+  public final RelativeSizeSpan newEffect() {
+    return new RelativeSizeSpan(mProportion);
   }
+
+  @Override
+  public final List<RelativeSizeSpan> getAllEffectsFrom(final Spannable text, final Selection selection) {
+    return Arrays.asList(text.getSpans(selection.start, selection.end, RelativeSizeSpan.class));
+  }
+
 }

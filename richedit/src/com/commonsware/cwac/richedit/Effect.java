@@ -14,6 +14,10 @@
 
 package com.commonsware.cwac.richedit;
 
+import android.text.Spannable;
+
+import java.util.List;
+
 /*
  * Base class for all effects. An "effect" is a particular
  * type of styling to apply to the selected text in a
@@ -23,8 +27,11 @@ package com.commonsware.cwac.richedit;
  * that the effect needs -- many will be Effect<Boolean>,
  * meaning the effect is a toggle (on or off), such as boldface.
  */
-abstract public class Effect<T> {
+abstract public class Effect<T, TEffect> {
   abstract boolean existsInSelection(RichEditText editor);
   abstract T valueInSelection(RichEditText editor);
   abstract void applyToSelection(RichEditText editor, T add);
+
+  public abstract TEffect newEffect();
+  public abstract List<TEffect> getAllEffectsFrom(final Spannable text, final Selection selection);
 }

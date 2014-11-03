@@ -1,6 +1,7 @@
 package com.commonsware.cwac.richedit;
 
 import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
+import static android.text.Spanned.SPAN_INCLUSIVE_INCLUSIVE;
 
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
@@ -11,7 +12,10 @@ import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 
-public class ListEffect extends Effect<ListSpan.Type> {
+import java.util.Arrays;
+import java.util.List;
+
+public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
 
   @Override
   boolean existsInSelection(final RichEditText editor) {
@@ -20,15 +24,12 @@ public class ListEffect extends Effect<ListSpan.Type> {
 
   @Override
   ListSpan.Type valueInSelection(final RichEditText editor) {
-    final Selection selection = new Selection(editor);
-    final Spannable str = editor.getText();
-    final ListSpan[] spans = getSpans(str, selection);
-
-    if (spans.length > 0) {
-      return spans[0].getListType();
+    final List<ListSpan> effects = getAllEffectsFrom(editor.getText(), new Selection(editor));
+    if (effects.isEmpty()) {
+      return null;
+    } else {
+      return effects.get(0).getListType();
     }
-
-    return null;
   }
 
   @Override
@@ -43,13 +44,23 @@ public class ListEffect extends Effect<ListSpan.Type> {
           ? new OrderedListSpan()
           : new UnorderedListSpan();
 
-      str.setSpan(span, selection.start, selection.end, SPAN_EXCLUSIVE_EXCLUSIVE);
+      str.setSpan(span, selection.start, selection.end, SPAN_INCLUSIVE_INCLUSIVE);
       applyListItemSpan(str, selection, span);
     }
   }
 
+  @Override
+  public final ListSpan newEffect() {
+    throw new UnsupportedOperationException("newEffect() is not supported in ListEffect!");
+  }
+
+  @Override
+  public final List<ListSpan> getAllEffectsFrom(final Spannable text, final Selection selection) {
+    return Arrays.asList(text.getSpans(selection.start, selection.end, ListSpan.class));
+  }
+
   private void removeListSpans(final Selection selection, final Spannable str) {
-    for (final ListSpan span : getSpans(str, selection)) {
+    for (final ListSpan span : getAllEffectsFrom(str, selection)) {
       str.removeSpan(span);
     }
 
@@ -65,7 +76,7 @@ public class ListEffect extends Effect<ListSpan.Type> {
   private void applyListItemSpan(final Spannable str, final Selection selection, final ListSpan span) {
     int start = selection.start;
     int end = selection.end;
-    if (str.charAt(selection.end - 1) != '\n') {
+    if (end > 0 && str.charAt(end - 1) != '\n') {
       ((SpannableStringBuilder) str).append('\n');
       end++;
     }
@@ -75,19 +86,18 @@ public class ListEffect extends Effect<ListSpan.Type> {
     for (int i = start; i < end; i++) {
       if (str.charAt(i) == '\n') {
         if (i + 1 < end && str.charAt(i + 1) == '\n') continue;
-        Object itemSpan;
+        Object itemSpan = null;
         if (span instanceof OrderedListSpan) {
           itemSpan = new NumberSpan(OrderedListSpan.getNextListItemIndex());
-        } else {
+        } else if (span instanceof UnorderedListSpan) {
           itemSpan = new BulletSpan();
         }
-        str.setSpan(itemSpan, start, i, SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (itemSpan != null) {
+          str.setSpan(itemSpan, start, i, SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         start = i + 1;
       }
     }
   }
 
-  private ListSpan[] getSpans(final Spannable str, final Selection selection) {
-    return str.getSpans(selection.start, selection.end, ListSpan.class);
-  }
 }

@@ -14,14 +14,21 @@
 
 package com.commonsware.cwac.richedit;
 
+import com.futuresimple.base.richedit.text.EffectsHandler;
+
 import android.text.Spannable;
 import android.text.style.StyleSpan;
 
-public class StyleEffect extends Effect<Boolean> {
+import java.util.ArrayList;
+import java.util.List;
+
+public class StyleEffect extends Effect<Boolean, StyleSpan> {
+  private final EffectsHandler mEffectsHandler;
   private int style;
 
   StyleEffect(int style) {
     this.style=style;
+    mEffectsHandler = new EffectsHandler(this);
   }
 
   @Override
@@ -68,6 +75,10 @@ public class StyleEffect extends Effect<Boolean> {
     return(result);
   }
 
+  public final int getStyle() {
+    return style;
+  }
+
   @Override
   Boolean valueInSelection(RichEditText editor) {
     return(existsInSelection(editor));
@@ -75,46 +86,24 @@ public class StyleEffect extends Effect<Boolean> {
 
   @Override
   void applyToSelection(RichEditText editor, Boolean add) {
-    applyToSpannable(editor.getText(), new Selection(editor), add);
+    mEffectsHandler.applyToSelection(editor.getText(), new Selection(editor));
   }
 
-  void applyToSpannable(Spannable str, Selection selection, Boolean add) {
-    int prologueStart=Integer.MAX_VALUE;
-    int epilogueEnd=-1;
+  @Override
+  public final StyleSpan newEffect() {
+    return new StyleSpan(style);
+  }
 
-    for (StyleSpan span : getStyleSpans(str, selection)) {
-      if (span.getStyle() == style) {
-        int spanStart=str.getSpanStart(span);
-
-        if (spanStart < selection.start) {
-          prologueStart=Math.min(prologueStart, spanStart);
-        }
-
-        int spanEnd=str.getSpanEnd(span);
-
-        if (spanEnd > selection.end) {
-          epilogueEnd=Math.max(epilogueEnd, spanEnd);
-        }
-
-        str.removeSpan(span);
+  @Override
+  public final List<StyleSpan> getAllEffectsFrom(final Spannable text, final Selection selection) {
+    final StyleSpan[] styleSpans = text.getSpans(selection.start, selection.end, StyleSpan.class);
+    final List<StyleSpan> result = new ArrayList<>();
+    for (final StyleSpan span : styleSpans) {
+      if (span.getStyle() == this.style) {
+        result.add(span);
       }
     }
-
-    if (add) {
-      str.setSpan(new StyleSpan(style), selection.start, selection.end,
-                  Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-    else {
-      if (prologueStart < Integer.MAX_VALUE) {
-        str.setSpan(new StyleSpan(style), prologueStart,
-                    selection.start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-      }
-
-      if (epilogueEnd > -1) {
-        str.setSpan(new StyleSpan(style), selection.end, epilogueEnd,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-      }
-    }
+    return result;
   }
 
   private StyleSpan[] getStyleSpans(Spannable str, Selection selection) {

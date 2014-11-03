@@ -16,9 +16,13 @@ package com.commonsware.cwac.richedit;
 
 import android.widget.EditText;
 
-class Selection {
-  int start;
-  int end;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class Selection {
+  public int start;
+  public int end;
 
   Selection(int _start, int _end) {
     start=_start;
@@ -35,11 +39,26 @@ class Selection {
     this(editor.getSelectionStart(), editor.getSelectionEnd());
   }
 
-  boolean isEmpty() {
+  public final boolean isEmpty() {
     return(start == end);
   }
 
   void apply(EditText editor) {
     editor.setSelection(start, end);
+  }
+
+  public final Selection getIntersection(final Selection other) {
+    if (end < other.start || start > other.end) {
+      return null;
+    }
+
+    final List<Integer> points = Arrays.asList(start, other.start, end, other.end);
+    Collections.sort(points);
+
+    return new Selection(points.get(1), points.get(2));
+  }
+
+  public final boolean equalsTo(final Selection other) {
+    return this.start == other.start && this.end == other.end;
   }
 }

@@ -14,14 +14,21 @@
 
 package com.commonsware.cwac.richedit;
 
+import com.futuresimple.base.richedit.text.EffectsHandler;
+
 import android.text.Spannable;
 import android.util.Log;
 
-public class SimpleBooleanEffect<T> extends Effect<Boolean> {
+import java.util.Arrays;
+import java.util.List;
+
+public class SimpleBooleanEffect<T> extends Effect<Boolean, T> {
+  private final EffectsHandler mEffectsHandler;
   private Class<T> clazz;
 
   SimpleBooleanEffect(Class<T> clazz) {
     this.clazz=clazz;
+    mEffectsHandler = new EffectsHandler(this);
   }
 
   @Override
@@ -54,55 +61,23 @@ public class SimpleBooleanEffect<T> extends Effect<Boolean> {
 
   @Override
   void applyToSelection(RichEditText editor, Boolean add) {
-    applyToSpannable(editor.getText(), new Selection(editor), add);
+    mEffectsHandler.applyToSelection(editor.getText(), new Selection(editor));
   }
 
-  void applyToSpannable(Spannable str, Selection selection, Boolean add) {
-    T[] spans=str.getSpans(selection.start, selection.end, clazz);
-    int prologueStart=Integer.MAX_VALUE;
-    int epilogueEnd=-1;
-
-    for (T span : spans) {
-      int spanStart=str.getSpanStart(span);
-
-      if (spanStart < selection.start) {
-        prologueStart=Math.min(prologueStart, spanStart);
-      }
-
-      int spanEnd=str.getSpanEnd(span);
-
-      if (spanEnd > selection.end) {
-        epilogueEnd=Math.max(epilogueEnd, spanEnd);
-      }
-
-      str.removeSpan(span);
-    }
-
+  @Override
+  public final T newEffect() {
     try {
-      if (add) {
-        str.setSpan(clazz.newInstance(), selection.start,
-                    selection.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-      }
-      else {
-        if (prologueStart < Integer.MAX_VALUE) {
-          str.setSpan(clazz.newInstance(), prologueStart,
-                      selection.start,
-                      Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        if (epilogueEnd > -1) {
-          str.setSpan(clazz.newInstance(), selection.end,
-                      epilogueEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-      }
-    }
-    catch (IllegalAccessException e) {
+      return clazz.newInstance();
+    } catch (InstantiationException | IllegalAccessException e) {
       Log.e("RichEditText",
-            "Exception instantiating " + clazz.toString(), e);
-    }
-    catch (InstantiationException e) {
-      Log.e("RichEditText",
-            "Exception instantiating " + clazz.toString(), e);
+          "Exception instantiating " + clazz.toString(), e);
+      return null;
     }
   }
+
+  @Override
+  public final List<T> getAllEffectsFrom(final Spannable text, final Selection selection) {
+    return Arrays.asList(text.getSpans(selection.start, selection.end, clazz));
+  }
+
 }

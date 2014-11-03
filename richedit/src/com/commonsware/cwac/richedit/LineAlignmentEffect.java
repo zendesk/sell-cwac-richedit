@@ -15,10 +15,19 @@
 package com.commonsware.cwac.richedit;
 
 import android.text.Layout;
+import android.text.Layout.Alignment;
 import android.text.Spannable;
 import android.text.style.AlignmentSpan;
+import android.text.style.AlignmentSpan.Standard;
 
-public class LineAlignmentEffect extends Effect<Layout.Alignment> {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class LineAlignmentEffect extends Effect<Layout.Alignment, AlignmentSpan> {
+
+  private Alignment mAlignment;
+
   @Override
   boolean existsInSelection(RichEditText editor) {
     return(valueInSelection(editor)!=null);
@@ -28,10 +37,11 @@ public class LineAlignmentEffect extends Effect<Layout.Alignment> {
   Layout.Alignment valueInSelection(RichEditText editor) {
     Selection selection=new Selection(editor);
     Spannable str=editor.getText();
-    AlignmentSpan.Standard[] spans=getAlignmentSpans(str, selection);
 
-    if (spans.length>0) {
-      return(spans[0].getAlignment());
+    final List<AlignmentSpan> effects = getAllEffectsFrom(str, selection);
+
+    if (!effects.isEmpty()) {
+      return(effects.get(0).getAlignment());
     }
     
     return(null);
@@ -39,22 +49,32 @@ public class LineAlignmentEffect extends Effect<Layout.Alignment> {
 
   @Override
   void applyToSelection(RichEditText editor, Layout.Alignment alignment) {
+    mAlignment = alignment;
     Selection selection=new Selection(editor);
     Spannable str=editor.getText();
 
-    for (AlignmentSpan.Standard span : getAlignmentSpans(str, selection)) {
+    final List<AlignmentSpan> effects = getAllEffectsFrom(str, selection);
+    for (AlignmentSpan span : effects) {
       str.removeSpan(span);
     }
 
     if (alignment!=null) {
       str.setSpan(new AlignmentSpan.Standard(alignment), selection.start, selection.end,
+                  // TODO: not needed for now, but we have to consider the span type !!!
                   Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
   }
 
-  private AlignmentSpan.Standard[] getAlignmentSpans(Spannable str,
-                                                     Selection selection) {
-    return(str.getSpans(selection.start, selection.end,
-                        AlignmentSpan.Standard.class));
+  @Override
+  public final AlignmentSpan newEffect() {
+    return new Standard(mAlignment);
   }
+
+  @Override
+  public final List<AlignmentSpan> getAllEffectsFrom(final Spannable text, final Selection selection) {
+    final List<AlignmentSpan> effects = new ArrayList<>();
+    effects.addAll(Arrays.asList(text.getSpans(selection.start, selection.end, Standard.class)));
+    return effects;
+  }
+
 }

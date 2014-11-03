@@ -21,9 +21,12 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.text.Layout;
+import android.text.style.AlignmentSpan;
 import android.text.style.StrikethroughSpan;
+import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
+import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
@@ -42,26 +45,20 @@ import java.util.List;
  * http://code.google.com/p/droid-writer
  * 
  */
-public class RichEditText extends EditText implements
-    EditorActionModeListener {
-  public static final Effect<Boolean> BOLD=
-      new StyleEffect(Typeface.BOLD);
-  public static final Effect<Boolean> ITALIC=
-      new StyleEffect(Typeface.ITALIC);
-  public static final Effect<Boolean> UNDERLINE=new UnderlineEffect();
-  public static final Effect<Boolean> STRIKETHROUGH=
-      new StrikethroughEffect();
-  public static final Effect<Layout.Alignment> LINE_ALIGNMENT=
-      new LineAlignmentEffect();
-  public static final Effect<String> TYPEFACE=new TypefaceEffect();
-  public static final Effect<Boolean> SUPERSCRIPT=
-      new SuperscriptEffect();
-  public static final Effect<Boolean> SUBSCRIPT=new SubscriptEffect();
+public class RichEditText extends EditText implements EditorActionModeListener {
 
-  public static final Effect<ListSpan.Type> LIST = new ListEffect();
+  public static final Effect<Boolean, StyleSpan> BOLD = new StyleEffect(Typeface.BOLD);
+  public static final Effect<Boolean, StyleSpan> ITALIC = new StyleEffect(Typeface.ITALIC);
+  public static final Effect<Boolean, UnderlineSpan> UNDERLINE = new UnderlineEffect();
+  public static final Effect<Boolean, StrikethroughSpan> STRIKETHROUGH = new StrikethroughEffect();
+  public static final Effect<Layout.Alignment, AlignmentSpan> LINE_ALIGNMENT =  new LineAlignmentEffect();
+  public static final Effect<String, TypefaceSpan> TYPEFACE = new TypefaceEffect();
+  public static final Effect<Boolean, SuperscriptSpan> SUPERSCRIPT = new SuperscriptEffect();
+  public static final Effect<Boolean, SubscriptSpan> SUBSCRIPT = new SubscriptEffect();
+  public static final Effect<ListSpan.Type, ListSpan> LIST = new ListEffect();
 
-  private static final ArrayList<Effect<?>> EFFECTS=
-      new ArrayList<Effect<?>>();
+  private static final ArrayList<Effect<?,?>> EFFECTS = new ArrayList<>();
+
   private boolean isSelectionChanging=false;
   private OnSelectionChangedListener selectionListener=null;
   private boolean actionModeIsShowing=false;
@@ -137,9 +134,9 @@ public class RichEditText extends EditText implements
     super.onSelectionChanged(start, end);
 
     if (selectionListener != null) {
-      ArrayList<Effect<?>> effects=new ArrayList<Effect<?>>();
+      ArrayList<Effect<?, ?>> effects=new ArrayList<>();
 
-      for (Effect<?> effect : EFFECTS) {
+      for (Effect<?, ?> effect : EFFECTS) {
         if (effect.existsInSelection(this)) {
           effects.add(effect);
         }
@@ -215,7 +212,7 @@ public class RichEditText extends EditText implements
    * most effects is a Boolean, indicating whether to add or
    * remove the effect.
    */
-  public <T> void applyEffect(Effect<T> effect, T value) {
+  public <T> void applyEffect(Effect<T, ?> effect, T value) {
     if (!isSelectionChanging) {
       effect.applyToSelection(this, value);
     }
@@ -226,7 +223,7 @@ public class RichEditText extends EditText implements
    * the current selection. This includes the effect being
    * applied in a subset of the current selection.
    */
-  public boolean hasEffect(Effect<?> effect) {
+  public boolean hasEffect(Effect<?, ?> effect) {
     return(effect.existsInSelection(this));
   }
 
@@ -239,7 +236,7 @@ public class RichEditText extends EditText implements
    * applied to the current selection. Returns null if there
    * is no such effect applied.
    */
-  public <T> T getEffectValue(Effect<T> effect) {
+  public <T> T getEffectValue(Effect<T, ?> effect) {
     return(effect.valueInSelection(this));
   }
 
@@ -248,7 +245,7 @@ public class RichEditText extends EditText implements
    * selection, removes it; if the effect is not presently
    * applied to the current selection, adds it.
    */
-  public void toggleEffect(Effect<Boolean> effect) {
+  public void toggleEffect(Effect<Boolean, ?> effect) {
     if (!isSelectionChanging) {
       effect.applyToSelection(this, !effect.valueInSelection(this));
     }
@@ -400,7 +397,7 @@ public class RichEditText extends EditText implements
      * all effects presently applied (so you can bulk-update
      * a toolbar when the selection changes).
      */
-    void onSelectionChanged(int start, int end, List<Effect<?>> effects);
+    void onSelectionChanged(int start, int end, List<Effect<?,?>> effects);
   }
 
   private static class UnderlineEffect extends
