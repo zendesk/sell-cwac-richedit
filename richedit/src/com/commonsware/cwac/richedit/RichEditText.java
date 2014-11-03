@@ -251,6 +251,16 @@ public class RichEditText extends EditText implements EditorActionModeListener {
     }
   }
 
+  public final void toggleList(final ListSpan.Type listType) {
+    if (!isSelectionChanging) {
+      if (LIST.valueInSelection(this) == null) {
+        applyEffect(LIST, listType);
+      } else {
+        applyEffect(LIST, null);
+      }
+    }
+  }
+
   @Override
   public boolean doAction(int itemId) {
     if (itemId == R.id.cwac_richedittext_underline) {
