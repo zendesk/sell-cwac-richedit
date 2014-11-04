@@ -15,27 +15,146 @@ public class EffectsHandler {
     mParentEffect = effect;
   }
 
+  private int openFromTheLeft(final int mode) {
+    if (isOpenFromTheLeft(mode)) {
+      return mode;
+    } else {
+      switch (mode) {
+
+      case Spannable.SPAN_EXCLUSIVE_INCLUSIVE:
+        return Spannable.SPAN_INCLUSIVE_INCLUSIVE;
+
+      case Spannable.SPAN_EXCLUSIVE_EXCLUSIVE:
+        return Spannable.SPAN_INCLUSIVE_EXCLUSIVE;
+
+      default:
+        throw new IllegalStateException("Not supported span mode: " + mode);
+      }
+    }
+  }
+
+  private int closeFromTheLeft(final int mode) {
+    if (isOpenFromTheLeft(mode)) {
+      switch (mode) {
+
+      case Spannable.SPAN_INCLUSIVE_EXCLUSIVE:
+        return Spannable.SPAN_EXCLUSIVE_EXCLUSIVE;
+
+      case Spannable.SPAN_INCLUSIVE_INCLUSIVE:
+        return Spannable.SPAN_EXCLUSIVE_INCLUSIVE;
+
+      default:
+        throw new IllegalStateException("Not supported span mode: " + mode);
+      }
+    } else {
+      return mode;
+    }
+
+  }
+
+  private int openFromTheRight(final int mode) {
+    if (isOpenFromTheRight(mode)) {
+      return mode;
+    } else {
+      switch (mode) {
+
+      case Spannable.SPAN_INCLUSIVE_EXCLUSIVE:
+        return Spannable.SPAN_INCLUSIVE_INCLUSIVE;
+
+      case Spannable.SPAN_EXCLUSIVE_EXCLUSIVE:
+        return Spannable.SPAN_EXCLUSIVE_INCLUSIVE;
+
+      default:
+        throw new IllegalStateException("Not supported span mode: " + mode);
+      }
+    }
+  }
+
+  private int closeFromTheRight(final int mode) {
+    if (isOpenFromTheRight(mode)) {
+      switch (mode) {
+
+      case Spannable.SPAN_EXCLUSIVE_INCLUSIVE:
+        return Spannable.SPAN_EXCLUSIVE_EXCLUSIVE;
+
+      case Spannable.SPAN_INCLUSIVE_INCLUSIVE:
+        return Spannable.SPAN_INCLUSIVE_EXCLUSIVE;
+
+      default:
+        throw new IllegalStateException("Not supported span mode: " + mode);
+      }
+    } else {
+      return mode;
+    }
+  }
+
+  private int[] closeInside(final int mode) {
+    switch (mode) {
+
+    case Spannable.SPAN_EXCLUSIVE_EXCLUSIVE:
+      // case: (...|...) => (...)|(...)
+      return new int[] {Spannable.SPAN_EXCLUSIVE_EXCLUSIVE, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE};
+
+    case Spannable.SPAN_INCLUSIVE_INCLUSIVE:
+      // case: [...|...] => [...)|(...]
+      return new int[] {Spannable.SPAN_INCLUSIVE_EXCLUSIVE, Spannable.SPAN_EXCLUSIVE_INCLUSIVE};
+
+    case Spannable.SPAN_INCLUSIVE_EXCLUSIVE:
+      // case: [...|...) => [...)|(...)
+      return new int[] {Spannable.SPAN_INCLUSIVE_EXCLUSIVE, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE};
+
+    case Spannable.SPAN_EXCLUSIVE_INCLUSIVE:
+      // case: (...|...] => (...)|(...]
+      return new int[] {Spannable.SPAN_EXCLUSIVE_EXCLUSIVE, Spannable.SPAN_EXCLUSIVE_INCLUSIVE};
+
+    default:
+      throw new IllegalStateException("Not supported span mode: " + mode);
+    }
+  }
+
   private void handleEmptySelectionOnSingleSpan(final Spannable text, final Object effect, final int cursorPos) {
     final int spanStart = text.getSpanStart(effect);
     final int spanEnd = text.getSpanEnd(effect);
+    final int spanMode = text.getSpanFlags(effect);
 
     text.removeSpan(effect);
 
     if (spanStart == cursorPos) {
 
-      // case: |[...] => |(...]
-      text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+      if (isOpenFromTheLeft(spanMode)) {
+
+        // case: |[...] => |(...]
+        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, closeFromTheLeft(spanMode));
+
+      } else {
+
+        // case: |(...] => |[...]
+        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, openFromTheLeft(spanMode));
+
+      }
+
 
     } else if ((spanStart < cursorPos) && (cursorPos < spanEnd)) {
 
-      // case: [...|...] => [...)|(...]
-      text.setSpan(mParentEffect.newEffect(), spanStart, cursorPos, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
-      text.setSpan(mParentEffect.newEffect(), cursorPos, spanEnd, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+      // case: split span into two parts closed in the middle
+      final int[] newModes = closeInside(spanMode);
+      text.setSpan(mParentEffect.newEffect(), spanStart, cursorPos, newModes[0]);
+      text.setSpan(mParentEffect.newEffect(), cursorPos, spanEnd, newModes[1]);
 
     } else if (cursorPos == spanEnd) {
 
-      // case: [...]| => [...)|
-      text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+      if (isOpenFromTheRight(spanMode)) {
+
+        // case: [...]| => [...)|
+        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, closeFromTheRight(spanMode));
+
+      } else {
+
+        // case: [...)| => [...]|
+        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, openFromTheRight(spanMode));
+
+      }
+
     }
   }
 
