@@ -33,46 +33,7 @@ public class StyleEffect extends Effect<Boolean, StyleSpan> {
 
   @Override
   boolean existsInSelection(RichEditText editor) {
-    Selection selection=new Selection(editor);
-    Spannable str=editor.getText();
-    boolean result=false;
-
-    if (selection.start != selection.end) {
-      for (StyleSpan span : getStyleSpans(str, selection)) {
-        if (span.getStyle() == style) {
-          result=true;
-          break;
-        }
-      }
-    }
-    else {
-      StyleSpan[] spansBefore=
-          str.getSpans(selection.start - 1, selection.end,
-                       StyleSpan.class);
-      StyleSpan[] spansAfter=
-          str.getSpans(selection.start, selection.end + 1,
-                       StyleSpan.class);
-
-      for (StyleSpan span : spansBefore) {
-        if (span.getStyle() == style) {
-          result=true;
-          break;
-        }
-      }
-
-      if (result) {
-        result=false;
-
-        for (StyleSpan span : spansAfter) {
-          if (span.getStyle() == style) {
-            result=true;
-            break;
-          }
-        }
-      }
-    }
-
-    return(result);
+    return mEffectsHandler.presentInsideSelection(editor.getText(), new Selection(editor));
   }
 
   public final int getStyle() {
@@ -106,7 +67,4 @@ public class StyleEffect extends Effect<Boolean, StyleSpan> {
     return result;
   }
 
-  private StyleSpan[] getStyleSpans(Spannable str, Selection selection) {
-    return(str.getSpans(selection.start, selection.end, StyleSpan.class));
-  }
 }

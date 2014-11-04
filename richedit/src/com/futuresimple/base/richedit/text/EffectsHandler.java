@@ -88,4 +88,49 @@ public class EffectsHandler {
     }
   }
 
+  private boolean isOpenFromTheLeft(final int mode) {
+    return mode == Spannable.SPAN_INCLUSIVE_INCLUSIVE || mode == Spannable.SPAN_INCLUSIVE_EXCLUSIVE;
+  }
+
+  private boolean isOpenFromTheRight(final int mode) {
+    return mode == Spannable.SPAN_INCLUSIVE_INCLUSIVE || mode == Spannable.SPAN_EXCLUSIVE_INCLUSIVE;
+  }
+
+  private boolean presentOnCursor(final Spannable text, final int cursorPos, final Object effect) {
+    final int effectStart = text.getSpanStart(effect);
+    final int effectEnd = text.getSpanEnd(effect);
+    final int effectMode = text.getSpanFlags(effect);
+
+    return (effectStart < cursorPos && cursorPos < effectEnd)
+        || (isOpenFromTheLeft(effectMode) && effectStart == cursorPos)
+        || (isOpenFromTheRight(effectMode) && effectEnd == cursorPos);
+  }
+
+  public final boolean presentInsideSelection(final Spannable text, final Selection selection) {
+    final List effects = mParentEffect.getAllEffectsFrom(text, selection);
+
+    if (effects.isEmpty()) {
+      return false;
+    }
+
+    if (selection.isEmpty()) {
+      return presentOnCursor(text, selection.end, effects.get(0));
+    }
+
+    final int affectedStart = text.getSpanStart(effects.get(0));
+    final int affectedEnd = text.getSpanEnd(effects.get(effects.size() - 1));
+
+    final int startMode = text.getSpanFlags(effects.get(0));
+    final int endMode = text.getSpanFlags(effects.get(effects.size() - 1));
+
+    final Selection intersection = selection.getIntersection(new Selection(affectedStart, affectedEnd));
+
+    if (intersection.isEmpty()) {
+      return (isOpenFromTheLeft(startMode) && intersection.end == affectedStart)
+          || (isOpenFromTheRight(endMode) && intersection.end == affectedEnd);
+    }
+
+    return true;
+  }
+
 }

@@ -24,7 +24,7 @@ public class Selection {
   public int start;
   public int end;
 
-  Selection(int _start, int _end) {
+  public Selection(int _start, int _end) {
     start=_start;
     end=_end;
 
