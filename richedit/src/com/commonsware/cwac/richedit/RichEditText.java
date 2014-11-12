@@ -402,11 +402,10 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     mainMode=null;
   }
 
-  private void applyLoadedImageSpan(final Spannable text, final int start, final int end, final String imageUri, final Drawable drawable) {
+  private void applyLoadedImageSpan(final Spannable text, final int start, final int end, final String imageUri, Drawable drawable) {
     if (drawable == null) {
-      // TODO: set image placeholder here !!!
-      //  d = [image_placeholder_drawable];
-      //  d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+      drawable = getResources().getDrawable(R.drawable.image_broken);
+      drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
     }
 
     // remove previously set image spans
@@ -415,9 +414,7 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
       text.removeSpan(imageSpan);
     }
 
-    if (drawable != null) {
-      text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
+    text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
   }
 
   @Override
