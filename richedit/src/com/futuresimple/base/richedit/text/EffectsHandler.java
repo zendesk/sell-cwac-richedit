@@ -15,6 +15,27 @@ public class EffectsHandler {
     mParentEffect = effect;
   }
 
+  private int getEffectRelatedFlag(final int flags) {
+
+    if ((flags & Spannable.SPAN_INCLUSIVE_INCLUSIVE) == Spannable.SPAN_INCLUSIVE_INCLUSIVE) {
+      return Spannable.SPAN_INCLUSIVE_INCLUSIVE;
+    }
+
+    if ((flags & Spannable.SPAN_INCLUSIVE_EXCLUSIVE) == Spannable.SPAN_INCLUSIVE_EXCLUSIVE) {
+      return Spannable.SPAN_INCLUSIVE_EXCLUSIVE;
+    }
+
+    if ((flags & Spannable.SPAN_EXCLUSIVE_INCLUSIVE) == Spannable.SPAN_EXCLUSIVE_INCLUSIVE) {
+      return Spannable.SPAN_EXCLUSIVE_INCLUSIVE;
+    }
+
+    if ((flags & Spannable.SPAN_EXCLUSIVE_EXCLUSIVE) == Spannable.SPAN_EXCLUSIVE_EXCLUSIVE) {
+      return Spannable.SPAN_EXCLUSIVE_EXCLUSIVE;
+    }
+
+    throw new IllegalStateException("Not supported span flags: " + flags);
+  }
+
   private int openFromTheLeft(final int mode) {
     if (isOpenFromTheLeft(mode)) {
       return mode;
@@ -115,7 +136,7 @@ public class EffectsHandler {
   private void handleEmptySelectionOnSingleSpan(final Spannable text, final Object effect, final int cursorPos) {
     final int spanStart = text.getSpanStart(effect);
     final int spanEnd = text.getSpanEnd(effect);
-    final int spanMode = text.getSpanFlags(effect);
+    final int spanMode = getEffectRelatedFlag(text.getSpanFlags(effect));
 
     text.removeSpan(effect);
 
@@ -218,7 +239,7 @@ public class EffectsHandler {
   private boolean presentOnCursor(final Spannable text, final int cursorPos, final Object effect) {
     final int effectStart = text.getSpanStart(effect);
     final int effectEnd = text.getSpanEnd(effect);
-    final int effectMode = text.getSpanFlags(effect);
+    final int effectMode = getEffectRelatedFlag(text.getSpanFlags(effect));
 
     return (effectStart < cursorPos && cursorPos < effectEnd)
         || (isOpenFromTheLeft(effectMode) && effectStart == cursorPos)
@@ -239,8 +260,8 @@ public class EffectsHandler {
     final int affectedStart = text.getSpanStart(effects.get(0));
     final int affectedEnd = text.getSpanEnd(effects.get(effects.size() - 1));
 
-    final int startMode = text.getSpanFlags(effects.get(0));
-    final int endMode = text.getSpanFlags(effects.get(effects.size() - 1));
+    final int startMode = getEffectRelatedFlag(text.getSpanFlags(effects.get(0)));
+    final int endMode = getEffectRelatedFlag(text.getSpanFlags(effects.get(effects.size() - 1)));
 
     final Selection intersection = selection.getIntersection(new Selection(affectedStart, affectedEnd));
 
