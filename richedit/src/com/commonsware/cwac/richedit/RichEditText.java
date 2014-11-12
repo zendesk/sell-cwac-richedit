@@ -37,6 +37,7 @@ import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +72,8 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   private EditorActionModeCallback.Native mainMode=null;
   private boolean forceActionMode=false;
   private boolean keyboardShortcuts=true;
+
+  private boolean mLoadingImagesShown;
 
   /*
    * EFFECTS is a roster of all defined effects, for simpler
@@ -419,12 +422,16 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
 
   @Override
   public final void onImageLoadingStarted(final int start, final int end, final String source) {
-    // nothing to do
+    if (!mLoadingImagesShown) {
+      Toast.makeText(getContext(), R.string.toast_loading_images, Toast.LENGTH_SHORT).show();
+      mLoadingImagesShown = true;
+    }
   }
 
   @Override
   public final void onImageLoadingFailed(final int start, final int end, final String source) {
     applyLoadedImageSpan(getText(), start, end, source, null);
+    mLoadingImagesShown = false;
   }
 
   @Override
@@ -432,11 +439,13 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
     drawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
     applyLoadedImageSpan(getText(), start, end, source, drawable);
+    mLoadingImagesShown = false;
   }
 
   @Override
   public final void onImageLoadingCancelled(final int start, final int end, final String source) {
     applyLoadedImageSpan(getText(), start, end, source, null);
+    mLoadingImagesShown = false;
   }
 
   /*
