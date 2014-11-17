@@ -257,6 +257,16 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   public void toggleEffect(Effect<Boolean, ?> effect) {
     if (!isSelectionChanging) {
       effect.applyToSelection(this, !effect.valueInSelection(this));
+      if (selectionListener != null) {
+        ArrayList<Effect<?, ?>> effects=new ArrayList<>();
+
+        for (Effect<?, ?> effec : EFFECTS) {
+          if (effec.existsInSelection(this)) {
+            effects.add(effec);
+          }
+        }
+        selectionListener.onSelectionChanged(getSelectionStart(), getSelectionEnd(), effects);
+      }
     }
   }
 
