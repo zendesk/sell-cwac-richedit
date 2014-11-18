@@ -20,3 +20,4 @@ gen
 *.iml
 *.ipr
 *.iws
+local.properties
