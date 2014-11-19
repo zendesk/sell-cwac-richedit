@@ -144,42 +144,45 @@ public class EffectsHandler {
 
     text.removeSpan(effect);
 
-    if (spanStart == cursorPos) {
+    // do not recreate empty text span
+    if (spanStart != spanEnd) {
+      if (spanStart == cursorPos) {
 
-      if (isOpenFromTheLeft(spanMode)) {
+        if (isOpenFromTheLeft(spanMode)) {
 
-        // case: |[...] => |(...]
-        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, closeFromTheLeft(spanMode));
+          // case: |[...] => |(...]
+          text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, closeFromTheLeft(spanMode));
 
-      } else {
+        } else {
 
-        // case: |(...] => |[...]
-        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, openFromTheLeft(spanMode));
+          // case: |(...] => |[...]
+          text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, openFromTheLeft(spanMode));
+
+        }
+
+
+      } else if ((spanStart < cursorPos) && (cursorPos < spanEnd)) {
+
+        // case: split span into two parts closed in the middle
+        final int[] newModes = closeInside(spanMode);
+        text.setSpan(mParentEffect.newEffect(), spanStart, cursorPos, newModes[0]);
+        text.setSpan(mParentEffect.newEffect(), cursorPos, spanEnd, newModes[1]);
+
+      } else if (cursorPos == spanEnd) {
+
+        if (isOpenFromTheRight(spanMode)) {
+
+          // case: [...]| => [...)|
+          text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, closeFromTheRight(spanMode));
+
+        } else {
+
+          // case: [...)| => [...]|
+          text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, openFromTheRight(spanMode));
+
+        }
 
       }
-
-
-    } else if ((spanStart < cursorPos) && (cursorPos < spanEnd)) {
-
-      // case: split span into two parts closed in the middle
-      final int[] newModes = closeInside(spanMode);
-      text.setSpan(mParentEffect.newEffect(), spanStart, cursorPos, newModes[0]);
-      text.setSpan(mParentEffect.newEffect(), cursorPos, spanEnd, newModes[1]);
-
-    } else if (cursorPos == spanEnd) {
-
-      if (isOpenFromTheRight(spanMode)) {
-
-        // case: [...]| => [...)|
-        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, closeFromTheRight(spanMode));
-
-      } else {
-
-        // case: [...)| => [...]|
-        text.setSpan(mParentEffect.newEffect(), spanStart, spanEnd, openFromTheRight(spanMode));
-
-      }
-
     }
   }
 
@@ -203,7 +206,11 @@ public class EffectsHandler {
         final int end = text.getSpanEnd(effects.get(1));
         text.removeSpan(effects.get(0));
         text.removeSpan(effects.get(1));
-        text.setSpan(mParentEffect.newEffect(), start, end, Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+
+        // do not recreate empty text spans
+        if (start != end) {
+          text.setSpan(mParentEffect.newEffect(), start, end, Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+        }
       } else {
 
         // user has placed cursor near/inside the span
