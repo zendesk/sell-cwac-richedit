@@ -1,9 +1,13 @@
 package com.futuresimple.base.richedit.text;
 
 import com.commonsware.cwac.richedit.Effect;
+import com.commonsware.cwac.richedit.R;
 import com.commonsware.cwac.richedit.Selection;
 
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.text.Spannable;
+import android.text.style.ImageSpan;
 
 import java.util.List;
 
@@ -271,6 +275,21 @@ public class EffectsHandler {
     }
 
     return true;
+  }
+
+  public static void applyLoadedImageSpan(final Spannable text, final Resources resources, final int start, final int end, final String imageUri, Drawable drawable) {
+    if (drawable == null) {
+      drawable = resources.getDrawable(R.drawable.image_broken);
+      drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    }
+
+    // remove previously set image spans
+    final ImageSpan[] imageSpans = text.getSpans(start, end, ImageSpan.class);
+    for (final ImageSpan imageSpan : imageSpans) {
+      text.removeSpan(imageSpan);
+    }
+
+    text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
   }
 
 }

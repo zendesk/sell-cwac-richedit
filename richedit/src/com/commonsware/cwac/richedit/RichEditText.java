@@ -14,6 +14,7 @@
 
 package com.commonsware.cwac.richedit;
 
+import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.HtmlImageParserListener;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 
@@ -25,9 +26,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
-import android.text.Spannable;
 import android.text.style.AlignmentSpan;
-import android.text.style.ImageSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
@@ -415,21 +414,6 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     mainMode=null;
   }
 
-  private void applyLoadedImageSpan(final Spannable text, final int start, final int end, final String imageUri, Drawable drawable) {
-    if (drawable == null) {
-      drawable = getResources().getDrawable(R.drawable.image_broken);
-      drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-    }
-
-    // remove previously set image spans
-    final ImageSpan[] imageSpans = text.getSpans(start, end, ImageSpan.class);
-    for (final ImageSpan imageSpan : imageSpans) {
-      text.removeSpan(imageSpan);
-    }
-
-    text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-  }
-
   @Override
   public final void onImageLoadingStarted(final int start, final int end, final String source) {
     if (!mLoadingImagesShown) {
@@ -440,7 +424,7 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
 
   @Override
   public final void onImageLoadingFailed(final int start, final int end, final String source) {
-    applyLoadedImageSpan(getText(), start, end, source, null);
+    EffectsHandler.applyLoadedImageSpan(getText(), getResources(), start, end, source, null);
     mLoadingImagesShown = false;
   }
 
@@ -448,13 +432,13 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   public final void onImageLoaded(final int start, final int end, final String source, final Bitmap bitmap) {
     final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
     drawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-    applyLoadedImageSpan(getText(), start, end, source, drawable);
+    EffectsHandler.applyLoadedImageSpan(getText(), getResources(), start, end, source, drawable);
     mLoadingImagesShown = false;
   }
 
   @Override
   public final void onImageLoadingCancelled(final int start, final int end, final String source) {
-    applyLoadedImageSpan(getText(), start, end, source, null);
+    EffectsHandler.applyLoadedImageSpan(getText(), getResources(), start, end, source, null);
     mLoadingImagesShown = false;
   }
 
