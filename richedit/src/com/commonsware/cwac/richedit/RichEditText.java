@@ -16,7 +16,14 @@ package com.commonsware.cwac.richedit;
 
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.HtmlImageParserListener;
+import com.futuresimple.base.richedit.text.HtmlParsingListener;
 import com.futuresimple.base.richedit.text.style.ListSpan;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageSize;
+import com.nostra13.universalimageloader.core.assist.ViewScaleType;
+import com.nostra13.universalimageloader.core.imageaware.NonViewAware;
+import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import android.app.Activity;
 import android.content.Context;
@@ -35,11 +42,14 @@ import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Custom widget that simplifies adding rich text editing
@@ -51,7 +61,7 @@ import java.util.List;
  * http://code.google.com/p/droid-writer
  * 
  */
-public class RichEditText extends EditText implements EditorActionModeListener, HtmlImageParserListener {
+public class RichEditText extends EditText implements EditorActionModeListener, HtmlImageParserListener, HtmlParsingListener {
 
   public static final Effect<Boolean, StyleSpan> BOLD = new StyleEffect(Typeface.BOLD);
   public static final Effect<Boolean, StyleSpan> ITALIC = new StyleEffect(Typeface.ITALIC);
@@ -73,6 +83,26 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   private boolean keyboardShortcuts=true;
 
   private boolean mLoadingImagesShown;
+
+  public static class ImageMeta {
+    private final String mSource;
+    private final Selection mPosition;
+
+    public ImageMeta(final String source, final int start, final int end) {
+      mSource = source;
+      mPosition = new Selection(start, end);
+    }
+
+    public final String getSource() {
+      return mSource;
+    }
+
+    public final Selection getPosition() {
+      return mPosition;
+    }
+  }
+
+  private final Set<ImageMeta> mImagesToLoad = new HashSet<>();
 
   /*
    * EFFECTS is a roster of all defined effects, for simpler
@@ -440,6 +470,56 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   public final void onImageLoadingCancelled(final int start, final int end, final String source) {
     EffectsHandler.applyLoadedImageSpan(getText(), getResources(), start, end, source, null);
     mLoadingImagesShown = false;
+  }
+
+  @Override
+  public final void onImageFound(final String source, final int start, final int end) {
+    mImagesToLoad.add(new ImageMeta(source, start, end));
+  }
+
+  @Override
+  public final void onParsingFinished() {
+    for (final ImageMeta imageMeta : mImagesToLoad) {
+      // 0x0 size means unknown
+      // also! do not pass uri parameter below (when creating NonViewAware object)
+      final NonViewAware nonViewAware = new NonViewAware(new ImageSize(0, 0), ViewScaleType.CROP);
+      ImageLoader.getInstance().displayImage(imageMeta.getSource(), nonViewAware, new ImageLoadingListenerImpl(this, imageMeta.getPosition()));
+    }
+
+    mImagesToLoad.clear();
+  }
+
+  private static class ImageLoadingListenerImpl implements ImageLoadingListener {
+
+    private final HtmlImageParserListener mListener;
+    private final int mStart;
+    private final int mEnd;
+
+    public ImageLoadingListenerImpl(final HtmlImageParserListener listener, final Selection position) {
+      mListener = listener;
+      mStart = position.start;
+      mEnd = position.end;
+    }
+
+    @Override
+    public final void onLoadingStarted(final String src, final View view) {
+      mListener.onImageLoadingStarted(mStart, mEnd, src);
+    }
+
+    @Override
+    public final void onLoadingFailed(final String src, final View view, final FailReason failReason) {
+      mListener.onImageLoadingFailed(mStart, mEnd, src);
+    }
+
+    @Override
+    public final void onLoadingComplete(final String src, final View view, final Bitmap bitmap) {
+      mListener.onImageLoaded(mStart, mEnd, src, bitmap);
+    }
+
+    @Override
+    public final void onLoadingCancelled(final String src, final View view) {
+      mListener.onImageLoadingCancelled(mStart, mEnd, src);
+    }
   }
 
   /*
