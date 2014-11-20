@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.text.Spannable;
 import android.text.style.ImageSpan;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class EffectsHandler {
@@ -304,6 +305,28 @@ public class EffectsHandler {
     }
 
     text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+  }
+
+  public static void applyLoadedImageSpan(final Spannable text, final Resources resources, final String imageUri, Drawable drawable) {
+    if (drawable == null) {
+      drawable = resources.getDrawable(R.drawable.image_broken);
+      drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    }
+
+    // remove and reset previously set image spans
+    final List<ImageSpan> anchoredSpans = new ArrayList<>();
+    final ImageSpan[] allImageSpans = text.getSpans(0, text.length(), ImageSpan.class);
+    for (final ImageSpan imageSpan : allImageSpans) {
+      if (imageSpan.getSource().equalsIgnoreCase(imageUri)) {
+        anchoredSpans.add(imageSpan);
+      }
+    }
+    for (final ImageSpan imageSpan : anchoredSpans) {
+      final int start = text.getSpanStart(imageSpan);
+      final int end = text.getSpanEnd(imageSpan);
+      text.removeSpan(imageSpan);
+      text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
   }
 
 }
