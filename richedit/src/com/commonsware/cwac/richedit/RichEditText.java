@@ -435,7 +435,7 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
 
   @Override
   public final void onLoadingFailed(final String source, final View view, final FailReason failReason) {
-    EffectsHandler.applyLoadedImageSpan(getText(), getResources(), source, null);
+    EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
     mLoadingImagesShown = false;
   }
 
@@ -443,13 +443,13 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   public final void onLoadingComplete(final String source, final View view, final Bitmap bitmap) {
     final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
     drawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-    EffectsHandler.applyLoadedImageSpan(getText(), getResources(), source, drawable);
+    EffectsHandler.applyLoadedImageSpan(getText(), source, getMeasuredWidth(), drawable);
     mLoadingImagesShown = false;
   }
 
   @Override
   public final void onLoadingCancelled(final String source, final View view) {
-    EffectsHandler.applyLoadedImageSpan(getText(), getResources(), source, null);
+    EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
     mLoadingImagesShown = false;
   }
 

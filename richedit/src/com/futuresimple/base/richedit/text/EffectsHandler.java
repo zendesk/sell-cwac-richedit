@@ -3,6 +3,7 @@ package com.futuresimple.base.richedit.text;
 import com.commonsware.cwac.richedit.Effect;
 import com.commonsware.cwac.richedit.R;
 import com.commonsware.cwac.richedit.Selection;
+import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
@@ -292,10 +293,23 @@ public class EffectsHandler {
     return true;
   }
 
-  public static void applyLoadedImageSpan(final Spannable text, final Resources resources, final int start, final int end, final String imageUri, Drawable drawable) {
+  private static Drawable getImageBrokenDrawable(final Resources resources) {
+    final Drawable drawable = resources.getDrawable(R.drawable.image_broken);
+    drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    return drawable;
+  }
+
+  public static void applyImageLoadingFailedImageSpan(final Spannable text, final Resources resources, final int start, final int end, final String imageUri) {
+    applyLoadedImageSpan(text, start, end, imageUri, getImageBrokenDrawable(resources));
+  }
+
+  public static void applyImageLoadingFailedImageSpan(final Spannable text, final Resources resources, final String imageUri) {
+    applyLoadedImageSpan(text, imageUri, null, getImageBrokenDrawable(resources));
+  }
+
+  public static void applyLoadedImageSpan(final Spannable text, final int start, final int end, final String imageUri, Drawable drawable) {
     if (drawable == null) {
-      drawable = resources.getDrawable(R.drawable.image_broken);
-      drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+      throw new IllegalArgumentException("Drawable was not specified!");
     }
 
     // remove previously set image spans
@@ -307,10 +321,9 @@ public class EffectsHandler {
     text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
   }
 
-  public static void applyLoadedImageSpan(final Spannable text, final Resources resources, final String imageUri, Drawable drawable) {
+  public static void applyLoadedImageSpan(final Spannable text, final String imageUri, final Integer maxWidth, Drawable drawable) {
     if (drawable == null) {
-      drawable = resources.getDrawable(R.drawable.image_broken);
-      drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+      throw new IllegalArgumentException("Drawable was not specified!");
     }
 
     // remove and reset previously set image spans
@@ -325,7 +338,11 @@ public class EffectsHandler {
       final int start = text.getSpanStart(imageSpan);
       final int end = text.getSpanEnd(imageSpan);
       text.removeSpan(imageSpan);
-      text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      text.setSpan(
+          (maxWidth == null)
+              ? new ImageSpan(drawable, imageUri)
+              : new ResizableImageSpan(drawable, imageUri, maxWidth),
+          start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
   }
 
