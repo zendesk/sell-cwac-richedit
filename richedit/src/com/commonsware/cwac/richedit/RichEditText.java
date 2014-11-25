@@ -17,6 +17,7 @@ package com.commonsware.cwac.richedit;
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.HtmlParsingListener;
 import com.futuresimple.base.richedit.text.style.ListSpan;
+import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -32,6 +33,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.style.AlignmentSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
@@ -82,6 +84,7 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   private boolean keyboardShortcuts=true;
 
   private boolean mLoadingImagesShown;
+  private int mLastMeasuredWidth;
 
   private final Set<String> mImagesToLoad = new HashSet<>();
 
@@ -468,6 +471,39 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     }
 
     mImagesToLoad.clear();
+  }
+
+  public final void refitBigImagesToScreenWidth() {
+    final Spannable spannable = getText();
+    if (spannable.length() > 0) {
+      final ResizableImageSpan[] images = spannable.getSpans(0, spannable.length(), ResizableImageSpan.class);
+      for (final ResizableImageSpan image : images) {
+        final Bitmap bitmap = image.getCachedBitmap();
+        if (bitmap != null) {
+          final int start = spannable.getSpanStart(image);
+          final int end = spannable.getSpanEnd(image);
+          spannable.removeSpan(image);
+
+          final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+          drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+
+          spannable.setSpan(
+              new ResizableImageSpan(drawable, image.getSource(), getMeasuredWidth()),
+              start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+          );
+        }
+      }
+    }
+  }
+
+  @Override
+  protected final void onLayout(final boolean changed, final int left, final int top, final int right, final int bottom) {
+    super.onLayout(changed, left, top, right, bottom);
+    final int currentWidth = right - left;
+    if (changed && (mLastMeasuredWidth != currentWidth)) {
+      refitBigImagesToScreenWidth();
+      mLastMeasuredWidth = currentWidth;
+    }
   }
 
   /*
