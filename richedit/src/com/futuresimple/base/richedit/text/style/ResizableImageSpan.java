@@ -6,6 +6,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.style.ImageSpan;
+import android.util.Log;
 
 import java.lang.ref.WeakReference;
 
@@ -17,7 +18,7 @@ import java.lang.ref.WeakReference;
 public class ResizableImageSpan extends ImageSpan {
 
   private WeakReference<Drawable> mDrawableRef;
-  private final int mContainerWidth;
+  private int mContainerWidth;
 
   public ResizableImageSpan(final Drawable drawable, final String source, final int containerWidth) {
     super(drawable, source);
@@ -81,4 +82,7 @@ public class ResizableImageSpan extends ImageSpan {
     return null;
   }
 
+  public void setWidth(int width) {
+    mContainerWidth = width;
+  }
 }

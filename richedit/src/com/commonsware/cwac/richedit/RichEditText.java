@@ -32,6 +32,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Parcelable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.style.AlignmentSpan;
@@ -42,6 +43,7 @@ import android.text.style.SuperscriptSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -462,6 +464,15 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   }
 
   @Override
+  protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+    final ResizableImageSpan[] images = getText().getSpans(0, getText().length(), ResizableImageSpan.class);
+    for (ResizableImageSpan image : images) {
+      image.setWidth(MeasureSpec.getSize(widthMeasureSpec));
+    }
+    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+  }
+
+  @Override
   public final void onParsingFinished() {
     for (final String imageUri : mImagesToLoad) {
       // 0x0 size means unknown
@@ -473,35 +484,35 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     mImagesToLoad.clear();
   }
 
-  public final void refitBigImagesToScreenWidth() {
-    final Spannable spannable = getText();
-    if (spannable.length() > 0) {
-      final ResizableImageSpan[] images = spannable.getSpans(0, spannable.length(), ResizableImageSpan.class);
-      for (final ResizableImageSpan image : images) {
-        final Bitmap bitmap = image.getCachedBitmap();
-        if (bitmap != null) {
-          final int start = spannable.getSpanStart(image);
-          final int end = spannable.getSpanEnd(image);
-          spannable.removeSpan(image);
-
-          final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-          drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-
-          spannable.setSpan(
-              new ResizableImageSpan(drawable, image.getSource(), getMeasuredWidth()),
-              start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-          );
-        }
-      }
-    }
-  }
+  //public final void refitBigImagesToScreenWidth() {
+  //  final Spannable spannable = getText();
+  //  if (spannable.length() > 0) {
+  //    final ResizableImageSpan[] images = spannable.getSpans(0, spannable.length(), ResizableImageSpan.class);
+  //    for (final ResizableImageSpan image : images) {
+  //      final Bitmap bitmap = image.getCachedBitmap();
+  //      if (bitmap != null) {
+  //        final int start = spannable.getSpanStart(image);
+  //        final int end = spannable.getSpanEnd(image);
+  //        spannable.removeSpan(image);
+  //
+  //        final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+  //        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+  //
+  //        spannable.setSpan(
+  //            new ResizableImageSpan(drawable, image.getSource(), getMeasuredWidth()),
+  //            start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+  //        );
+  //      }
+  //    }
+  //  }
+  //}
 
   @Override
   protected final void onLayout(final boolean changed, final int left, final int top, final int right, final int bottom) {
     super.onLayout(changed, left, top, right, bottom);
     final int currentWidth = right - left;
     if (changed && (mLastMeasuredWidth != currentWidth)) {
-      refitBigImagesToScreenWidth();
+      //refitBigImagesToScreenWidth();
       mLastMeasuredWidth = currentWidth;
     }
   }
