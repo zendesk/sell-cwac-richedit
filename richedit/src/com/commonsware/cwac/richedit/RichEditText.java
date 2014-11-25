@@ -18,6 +18,7 @@ import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.HtmlParsingListener;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
+import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -40,7 +41,6 @@ import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
 import android.text.style.TypefaceSpan;
-import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
@@ -66,7 +66,7 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
 
   public static final Effect<Boolean, StyleSpan> BOLD = new StyleEffect(Typeface.BOLD);
   public static final Effect<Boolean, StyleSpan> ITALIC = new StyleEffect(Typeface.ITALIC);
-  public static final Effect<Boolean, UnderlineSpan> UNDERLINE = new UnderlineEffect();
+  public static final Effect<Boolean, RichTextUnderlineSpan> UNDERLINE = new UnderlineEffect();
   public static final Effect<Boolean, StrikethroughSpan> STRIKETHROUGH = new StrikethroughEffect();
   public static final Effect<Layout.Alignment, AlignmentSpan> LINE_ALIGNMENT =  new LineAlignmentEffect();
   public static final Effect<String, TypefaceSpan> TYPEFACE = new TypefaceEffect();
@@ -520,10 +520,9 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     void onSelectionChanged(int start, int end, List<Effect<?,?>> effects);
   }
 
-  private static class UnderlineEffect extends
-      SimpleBooleanEffect<UnderlineSpan> {
+  private static class UnderlineEffect extends SimpleBooleanEffect<RichTextUnderlineSpan> {
     UnderlineEffect() {
-      super(UnderlineSpan.class);
+      super(RichTextUnderlineSpan.class);
     }
   }
 
