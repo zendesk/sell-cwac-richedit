@@ -61,4 +61,8 @@ public class Selection {
   public final boolean equalsTo(final Selection other) {
     return this.start == other.start && this.end == other.end;
   }
+
+  public final boolean isSet() {
+    return start >= 0 && end >= 0;
+  }
 }
