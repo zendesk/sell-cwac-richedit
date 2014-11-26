@@ -45,7 +45,6 @@ import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -83,7 +82,6 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
   private boolean forceActionMode=false;
   private boolean keyboardShortcuts=true;
 
-  private boolean mLoadingImagesShown;
   private int mLastMeasuredWidth;
 
   private final Set<String> mImagesToLoad = new HashSet<>();
@@ -430,16 +428,12 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
 
   @Override
   public final void onLoadingStarted(final String source, final View view) {
-    if (!mLoadingImagesShown) {
-      Toast.makeText(getContext(), R.string.toast_loading_images, Toast.LENGTH_SHORT).show();
-      mLoadingImagesShown = true;
-    }
+    // nothing to do
   }
 
   @Override
   public final void onLoadingFailed(final String source, final View view, final FailReason failReason) {
     EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
-    mLoadingImagesShown = false;
   }
 
   @Override
@@ -447,13 +441,11 @@ public class RichEditText extends EditText implements EditorActionModeListener, 
     final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
     drawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
     EffectsHandler.applyLoadedImageSpan(getText(), source, getMeasuredWidth(), drawable);
-    mLoadingImagesShown = false;
   }
 
   @Override
   public final void onLoadingCancelled(final String source, final View view) {
     EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
-    mLoadingImagesShown = false;
   }
 
   @Override
