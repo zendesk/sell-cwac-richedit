@@ -36,6 +36,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.Spanned;
 import android.text.style.AlignmentSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
@@ -463,6 +464,34 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
     }
 
     mImagesToLoad.clear();
+  }
+
+  private void sanitizeStyleSpans(final Spanned text) {
+    final Object[] spans = text.getSpans(0, text.length(), Object.class);
+    for (final Object span : spans) {
+      if ((span instanceof StyleSpan) || (span instanceof RichTextUnderlineSpan)) {
+        final int start = text.getSpanStart(span);
+        final int end = text.getSpanEnd(span);
+
+        ((Spannable) text).removeSpan(span);
+
+        ((Spannable) text).setSpan(
+            (span instanceof StyleSpan)
+                ? new StyleSpan(((StyleSpan) span).getStyle())
+                : new RichTextUnderlineSpan(),
+            start, end, Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+      }
+    }
+  }
+
+  public final void setText(final Spanned text) {
+    sanitizeStyleSpans(text);
+    super.setText(text);
+  }
+
+  public final void append(final Spanned text) {
+    sanitizeStyleSpans(text);
+    super.append(text);
   }
 
   public final void refitBigImagesToScreenWidth() {

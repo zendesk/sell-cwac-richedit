@@ -254,13 +254,6 @@ public class EffectsHandler {
     final int effectEnd = text.getSpanEnd(effect);
     final int effectMode = getEffectRelatedFlag(text.getSpanFlags(effect));
 
-    // turn on EXCLUSIVE style effect from the right side
-    if (!isOpenFromTheRight(effectMode) && effectEnd == cursorPos) {
-      text.removeSpan(effect);
-      text.setSpan(mParentEffect.newEffect(), effectStart, effectEnd, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-      return true;
-    }
-
     return (effectStart < cursorPos && cursorPos < effectEnd)
         || (isOpenFromTheLeft(effectMode) && effectStart == cursorPos)
         || (isOpenFromTheRight(effectMode) && effectEnd == cursorPos);
