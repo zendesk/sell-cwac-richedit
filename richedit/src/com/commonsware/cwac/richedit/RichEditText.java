@@ -19,6 +19,7 @@ import com.futuresimple.base.richedit.text.HtmlParsingListener;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
+import com.futuresimple.base.richedit.ui.LinkableEditText;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -44,7 +45,6 @@ import android.text.style.TypefaceSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.EditText;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -61,7 +61,7 @@ import java.util.Set;
  * http://code.google.com/p/droid-writer
  * 
  */
-public class RichEditText extends EditText implements EditorActionModeListener, ImageLoadingListener, HtmlParsingListener {
+public class RichEditText extends LinkableEditText implements EditorActionModeListener, ImageLoadingListener, HtmlParsingListener {
 
   public static final Effect<Boolean, StyleSpan> BOLD = new StyleEffect(Typeface.BOLD);
   public static final Effect<Boolean, StyleSpan> ITALIC = new StyleEffect(Typeface.ITALIC);
