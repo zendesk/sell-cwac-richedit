@@ -110,6 +110,8 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
     EFFECTS.add(TYPEFACE);
   }
 
+  private boolean mShowKeyboard = true;
+
   /*
    * Standard one-parameter widget constructor, simply
    * chaining to superclass.
@@ -525,6 +527,15 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
       refitBigImagesToScreenWidth();
       mLastMeasuredWidth = currentWidth;
     }
+  }
+
+  @Override
+  public boolean onCheckIsTextEditor() {
+    return super.onCheckIsTextEditor() && mShowKeyboard;
+  }
+
+  public void setShowKeyboard(boolean showKeyboard) {
+    mShowKeyboard = showKeyboard;
   }
 
   /*
