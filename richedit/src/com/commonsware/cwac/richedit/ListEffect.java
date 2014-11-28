@@ -58,13 +58,18 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
   private void extendListSelectionProperly(final CharSequence str, final Selection selection) {
     // in case when we have partly selected the line
     // we need to start the list from it's beginning
-    for (int i = selection.start; i >= 0; i--) {
-      if (str.charAt(i) == '\n') {
-        selection.setStart((i == selection.start) ? i : i + 1);
-        break;
-      }
-      if (i == 0) {
-        selection.setStart(0);
+    if (selection.start > 0) {
+      for (int i = selection.start; i >= 0; i--) {
+        if (str.charAt(i) == '\n') {
+          if (i == selection.start) {
+            continue;
+          }
+          selection.setStart((i == selection.start) ? i : i + 1);
+          break;
+        }
+        if (i == 0) {
+          selection.setStart(0);
+        }
       }
     }
 
