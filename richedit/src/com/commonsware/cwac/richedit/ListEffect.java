@@ -1,7 +1,9 @@
 package com.commonsware.cwac.richedit;
 
 import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
+import static android.text.Spanned.SPAN_EXCLUSIVE_INCLUSIVE;
 
+import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.NumberSpan;
@@ -31,67 +33,17 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     }
   }
 
-  private void removeEmptyLines(final Editable str, final Selection selection) {
-
-    // EXAMPLE:
-    //
-    // The list for
-    // aaa\n
-    // \n
-    // bbb\n
-    // \n
-    // ccc\n
-    //
-    // will look like
-    // * aaa\n
-    // * bbb\n
-    // * ccc\n
-
-    for (int i = selection.start; i < selection.end; i++) {
-      if ((str.charAt(i) == '\n') && (str.charAt(i+1) == '\n')) {
-        str.replace(i, i + 1, "");
-        selection.end--;
-      }
-    }
-  }
-
-  private void extendListSelectionProperly(final CharSequence str, final Selection selection) {
-    // in case when we have partly selected the line
-    // we need to start the list from it's beginning
-    if (selection.start > 0) {
-      for (int i = selection.start; i >= 0; i--) {
-        if (str.charAt(i) == '\n') {
-          if (i == selection.start) {
-            continue;
-          }
-          selection.setStart((i == selection.start) ? i : i + 1);
-          break;
-        }
-        if (i == 0) {
-          selection.setStart(0);
-        }
-      }
-    }
-
-    // the same approach we will use for the end of selection
-    for (int i = selection.end; i < str.length(); i++) {
-      if (str.charAt(i) == '\n') {
-        selection.setEnd(i);
-        break;
-      }
-      if (i == str.length() - 1) {
-        selection.setEnd(str.length() - 1);
-      }
-    }
-  }
-
   @Override
   void applyToSelection(final RichEditText editor, final ListSpan.Type listSpan) {
     final Selection selection = new Selection(editor);
     final Editable str = editor.getText();
 
-    removeEmptyLines(str, selection);
-    extendListSelectionProperly(str, selection);
+    // remove empty lines inside selection
+    EffectsHandler.removeEmptyLines(str, selection);
+
+    // select all lines from begin to the end
+    EffectsHandler.extendSelectionToTheLineWidth(str, selection);
+
     removeListSpans(selection, str);
 
     if (listSpan != null) {
@@ -128,28 +80,35 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     }
   }
 
-  private void applyListItemSpan(final Spannable str, final Selection selection, final ListSpan span) {
+  private void applyItemSpan(final Spannable str, final int start, final int end, final ListSpan span, final int spanType) {
+    final Object itemSpan =
+        (span instanceof OrderedListSpan)
+            ? new NumberSpan(OrderedListSpan.getNextListItemIndex())
+            : (span instanceof UnorderedListSpan)
+                ? new BulletSpan()
+                : null;
+
+    if (itemSpan != null) {
+      str.setSpan(itemSpan, start, end, spanType);
+    }
+  }
+
+  private void applyListItemSpan(final Editable str, final Selection selection, final ListSpan span) {
     if (span instanceof OrderedListSpan) {
       OrderedListSpan.newList();
     }
 
-    int start = selection.start;
-    int end = selection.end;
+    if (selection.isEmpty()) {
+      applyItemSpan(str, selection.start, selection.end, span, SPAN_EXCLUSIVE_INCLUSIVE);
+    } else {
+      int start = selection.start;
+      int end = selection.end;
 
-    for (int i = start; i <= end; i++) {
-      if (str.charAt(i) == '\n') {
-        final Object itemSpan =
-            (span instanceof OrderedListSpan)
-                ? new NumberSpan(OrderedListSpan.getNextListItemIndex())
-                : (span instanceof UnorderedListSpan)
-                    ? new BulletSpan()
-                    : null;
-
-        if (itemSpan != null) {
-          str.setSpan(itemSpan, start, i, SPAN_EXCLUSIVE_EXCLUSIVE);
+      for (int i = start; i <= end; i++) {
+        if (str.charAt(i) == '\n') {
+          applyItemSpan(str, start, i, span, SPAN_EXCLUSIVE_EXCLUSIVE);
+          start = i + 1;
         }
-
-        start = i + 1;
       }
     }
   }

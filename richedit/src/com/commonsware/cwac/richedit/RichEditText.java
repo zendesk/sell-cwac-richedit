@@ -16,6 +16,7 @@ package com.commonsware.cwac.richedit;
 
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.HtmlParsingListener;
+import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
@@ -34,9 +35,12 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
@@ -118,6 +122,7 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
    */
   public RichEditText(Context context) {
     super(context);
+    initEffectWatchers();
   }
 
   /*
@@ -126,6 +131,7 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
    */
   public RichEditText(Context context, AttributeSet attrs) {
     super(context, attrs);
+    initEffectWatchers();
   }
 
   /*
@@ -134,6 +140,11 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
    */
   public RichEditText(Context context, AttributeSet attrs, int defStyle) {
     super(context, attrs, defStyle);
+    initEffectWatchers();
+  }
+
+  private void initEffectWatchers() {
+    addTextChangedListener(new ListItemTextWatcher());
   }
 
   /*
@@ -285,6 +296,15 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
   }
 
   public final void toggleList(final ListSpan.Type listType) {
+    // android-specific whole!
+    // we cannot set any graphic span on empty text
+    // so we are adding new line on toggling list
+    // (and than we have to set the cursor back)
+    if (TextUtils.isEmpty(getText())) {
+      append("\n");
+      setSelection(0);
+    }
+
     if (!isSelectionChanging) {
       if (LIST.valueInSelection(this) == null) {
         applyEffect(LIST, listType);
@@ -576,6 +596,83 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
       SimpleBooleanEffect<SubscriptSpan> {
     SubscriptEffect() {
       super(SubscriptSpan.class);
+    }
+  }
+
+  private class ListItemTextWatcher implements TextWatcher {
+    private boolean mNewLineAdded;
+
+    @Override
+    public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
+      // nothing to do
+    }
+
+    @Override
+    public final void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
+      if (count == 1) {
+        final String added = s.toString().substring(start, start + count);
+        mNewLineAdded = added.equals("\n");
+      }
+    }
+
+    @Override
+    public final void afterTextChanged(final Editable s) {
+      sanitizeBullets(s);
+      if (mNewLineAdded) {
+        handleNewLineAdded(s);
+      } else {
+        handleListItemEditing(s);
+      }
+    }
+
+    private void sanitizeBullets(final Editable s) {
+      // remove bullets if there is no "\n" between them
+      final Selection selection = new Selection(RichEditText.this);
+      final BulletSpan[] bullets = s.getSpans(0, selection.end, BulletSpan.class);
+      if (bullets.length > 1) {
+        final BulletSpan beforeLast = bullets[bullets.length - 2];
+        final BulletSpan last = bullets[bullets.length - 1];
+        final int start = s.getSpanStart(beforeLast);
+        final int end = s.getSpanEnd(last);
+        if (!s.toString().substring(start, end).contains("\n")) {
+          s.removeSpan(last);
+        }
+      }
+    }
+
+    private void handleListItemEditing(final Editable s) {
+      final Selection selection = new Selection(RichEditText.this);
+      final BulletSpan[] bullets = s.getSpans(selection.start, selection.end, BulletSpan.class);
+      if (bullets.length > 0) {
+        final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(bullets[0]));
+        if (EffectsHandler.isOpenFromTheRight(mode)) {
+          s.removeSpan(bullets[0]);
+          EffectsHandler.extendSelectionToTheLineWidth(s, selection);
+          s.setSpan(
+              new BulletSpan(),
+              selection.start, selection.end,
+              (selection.isEmpty())
+                  ? Spanned.SPAN_EXCLUSIVE_INCLUSIVE
+                  : Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+          );
+        }
+      }
+    }
+
+    private void handleNewLineAdded(final Editable s) {
+      final Selection selection = new Selection(RichEditText.this);
+      final BulletSpan[] bullets = s.getSpans(0, selection.end, BulletSpan.class);
+      if (bullets.length > 0) {
+        final BulletSpan lastBullet = bullets[bullets.length - 1];
+        final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(lastBullet));
+        if (EffectsHandler.isOpenFromTheRight(mode)) {
+          // stop the list if it's previous item is empty
+          s.removeSpan(lastBullet);
+        } else {
+          s.setSpan(new BulletSpan(), selection.start, selection.end, Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+        }
+      }
+      mNewLineAdded = false;
     }
   }
 }
