@@ -1,28 +1,42 @@
 package com.futuresimple.base.richedit.text.style;
 
-import android.os.Parcel;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Browser;
+import android.text.style.ClickableSpan;
+import android.view.View;
 
-public class URLSpan extends android.text.style.URLSpan {
+public class URLSpan extends ClickableSpan {
 
-  public final String title;
-  public final String target;
+  private final String mUrl;
+  private final String mTitle;
+  private final String mTarget;
 
-  public URLSpan(String url, String title, String target) {
-    super(url);
-    this.title = title;
-    this.target = target;
+  public URLSpan(final String url, final String title, final String target) {
+    mUrl = url;
+    mTitle = title;
+    mTarget = target;
   }
 
-  public URLSpan(Parcel src) {
-    super(src);
-    title = src.readString();
-    target = src.readString();
+  public final String getUrl() {
+    return mUrl;
+  }
+
+  public final String getTitle() {
+    return mTitle;
+  }
+
+  public final String getTarget() {
+    return mTarget;
   }
 
   @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    super.writeToParcel(dest, flags);
-    dest.writeString(title);
-    dest.writeString(target);
+  public final void onClick(final View widget) {
+    final Uri uri = Uri.parse(mUrl);
+    final Context context = widget.getContext();
+    final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+    intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
+    context.startActivity(intent);
   }
 }

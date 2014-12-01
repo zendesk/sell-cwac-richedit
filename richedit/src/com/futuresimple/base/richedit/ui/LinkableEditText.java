@@ -53,7 +53,7 @@ public class LinkableEditText extends EditText {
     final List<LinkHolder> linkHolders = new ArrayList<>();
     final URLSpan[] links = getText().getSpans(0, getText().length(), URLSpan.class);
     for (final URLSpan link : links) {
-      linkHolders.add(new LinkHolder(link.getURL(), link.title, link.target, getText().getSpanStart(link), getText().getSpanEnd(link)));
+      linkHolders.add(new LinkHolder(link.getUrl(), link.getTitle(), link.getTarget(), getText().getSpanStart(link), getText().getSpanEnd(link)));
       getText().removeSpan(link);
     }
 
