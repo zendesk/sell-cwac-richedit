@@ -6,6 +6,7 @@ import static android.text.Spanned.SPAN_EXCLUSIVE_INCLUSIVE;
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
+import com.futuresimple.base.richedit.text.style.ListSpan.Type;
 import com.futuresimple.base.richedit.text.style.NumberSpan;
 import com.futuresimple.base.richedit.text.style.OrderedListSpan;
 import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
@@ -82,9 +83,9 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
 
   private void applyItemSpan(final Spannable str, final int start, final int end, final ListSpan span, final int spanType) {
     final Object itemSpan =
-        (span instanceof OrderedListSpan)
+        (span.getListType() == Type.ORDERED)
             ? new NumberSpan(OrderedListSpan.getNextListItemIndex())
-            : (span instanceof UnorderedListSpan)
+            : (span.getListType() == Type.UNORDERED)
                 ? new BulletSpan()
                 : null;
 
@@ -94,7 +95,7 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
   }
 
   private void applyListItemSpan(final Editable str, final Selection selection, final ListSpan span) {
-    if (span instanceof OrderedListSpan) {
+    if (span.getListType() == Type.ORDERED) {
       OrderedListSpan.newList();
     }
 
