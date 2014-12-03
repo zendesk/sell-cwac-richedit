@@ -14,6 +14,7 @@ import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
 import android.text.Editable;
 import android.text.Spannable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -64,13 +65,22 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
 
   @Override
   public final List<ListSpan> getAllEffectsFrom(final Spannable text, final Selection selection) {
+    return getAllListMarks(text, selection);
+  }
+
+  private static List<ListSpan> getAllListMarks(final Spannable text, final Selection selection) {
     return Arrays.asList(text.getSpans(selection.start, selection.end, ListSpan.class));
   }
 
-  private void removeListSpans(final Selection selection, final Spannable str) {
-    for (final ListSpan span : getAllEffectsFrom(str, selection)) {
+  private static void removeListMarks(final Spannable str, final Selection selection) {
+    final List<ListSpan> lists = getAllListMarks(str, selection);
+    for (final ListSpan span : lists) {
       str.removeSpan(span);
     }
+  }
+
+  private void removeListSpans(final Selection selection, final Spannable str) {
+    removeListMarks(str, selection);
 
     for (final BulletSpan span : str.getSpans(selection.start, selection.end, BulletSpan.class)) {
       str.removeSpan(span);
@@ -114,4 +124,38 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     }
   }
 
+  public static void sanitizeBulletLists(final Spannable str) {
+    removeListMarks(str, new Selection(0, str.length()));
+
+    final List<BulletSpan> bullets = EffectsHandler.getSpansByOrder(str, new Selection(0, str.length()), BulletSpan.class);
+
+    final List<Integer> starts = new ArrayList<>();
+    final List<Integer> ends = new ArrayList<>();
+
+    if (bullets.size() > 0) {
+      if (bullets.size() == 1) {
+        str.setSpan(new UnorderedListSpan(), str.getSpanStart(bullets.get(0)), str.getSpanEnd(bullets.get(0)), SPAN_EXCLUSIVE_EXCLUSIVE);
+      } else {
+        for (int i = 0; i < bullets.size(); i++) {
+          if (i == 0) {
+            starts.add(str.getSpanStart(bullets.get(i)));
+          } else if (i == bullets.size() - 1) {
+            ends.add(str.getSpanEnd(bullets.get(i)));
+          } else {
+            final int currentStart = str.getSpanStart(bullets.get(i));
+            final int previousEnd = str.getSpanEnd(bullets.get(i - 1));
+            if (currentStart - previousEnd > 1) {
+              ends.add(previousEnd);
+              starts.add(currentStart);
+            }
+          }
+        }
+      }
+    }
+
+    // starts and ends sizes has to be equal
+    for (int k = 0; k < ends.size(); k++) {
+      str.setSpan(new UnorderedListSpan(), starts.get(k), ends.get(k), SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+  }
 }
