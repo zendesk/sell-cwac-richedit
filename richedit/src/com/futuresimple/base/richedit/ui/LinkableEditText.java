@@ -12,7 +12,7 @@ import android.widget.EditText;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LinkableEditText extends EditText {
+public class LinkableEditText extends FixedSelectionEditText {
 
   public LinkableEditText(final Context context) {
     super(context);
