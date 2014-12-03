@@ -1,6 +1,12 @@
 package com.futuresimple.base.richedit.text.style.util;
 
+import com.commonsware.cwac.richedit.Selection;
+
 import android.text.Spannable;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class SpansUtil {
 
@@ -9,6 +15,17 @@ public class SpansUtil {
     for (final T span : spans) {
       s.removeSpan(span);
     }
+  }
+
+  public static <T> List<T> getSpansByOrder(final Spannable s, final Selection selection, final Class<T> kind) {
+    final List<T> spansList = Arrays.asList(s.getSpans(selection.start, selection.end, kind));
+    Collections.sort(spansList, new SpansComparator<T>(s));
+    return spansList;
+  }
+
+  public static <T> T getLastSpanAt(final Spannable s, final Selection selection, final Class<T> kind) {
+    final List<T> spans = getSpansByOrder(s, selection, kind);
+    return spans.isEmpty() ? null : spans.get(spans.size() - 1);
   }
 
 }
