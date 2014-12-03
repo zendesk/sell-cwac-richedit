@@ -53,7 +53,9 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
           ? new OrderedListSpan()
           : new UnorderedListSpan();
 
-      str.setSpan(span, selection.start, selection.end, SPAN_EXCLUSIVE_EXCLUSIVE);
+      str.setSpan(span, selection.start, selection.end,
+          selection.isEmpty() ? SPAN_EXCLUSIVE_INCLUSIVE : SPAN_EXCLUSIVE_EXCLUSIVE
+      );
       applyListItemSpan(str, selection, span);
     }
   }
