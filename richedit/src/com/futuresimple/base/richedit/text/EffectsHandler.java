@@ -394,4 +394,14 @@ public class EffectsHandler {
     }
   }
 
+  public static List<Integer> getImageIndexes(final Spannable s) {
+    final ImageSpan[] images = s.getSpans(0, s.length(), ImageSpan.class);
+    final List<Integer> imageIndexes = new ArrayList<>();
+    for (final ImageSpan imageSpan : images) {
+      imageIndexes.add(s.getSpanStart(imageSpan));
+    }
+
+    return imageIndexes;
+  }
+
 }

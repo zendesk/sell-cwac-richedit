@@ -20,6 +20,7 @@ import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
+import com.futuresimple.base.richedit.text.util.StringsUtil;
 import com.futuresimple.base.richedit.ui.LinkableEditText;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
@@ -42,14 +43,12 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
-import android.text.style.ReplacementSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
 import android.text.style.TypefaceSpan;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 
@@ -69,6 +68,8 @@ import java.util.Set;
  * 
  */
 public class RichEditText extends LinkableEditText implements EditorActionModeListener, ImageLoadingListener, HtmlParsingListener {
+
+  public static final String IMAGE_HOLDER_STRING = "\uFFFC";
 
   public static final Effect<Boolean, StyleSpan> BOLD = new StyleEffect(Typeface.BOLD);
   public static final Effect<Boolean, StyleSpan> ITALIC = new StyleEffect(Typeface.ITALIC);
@@ -147,6 +148,7 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
 
   private void initEffectWatchers() {
     addTextChangedListener(new ListItemTextWatcher());
+    addTextChangedListener(new ImagesTextWatcher());
   }
 
   /*
@@ -596,6 +598,58 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
       SimpleBooleanEffect<SubscriptSpan> {
     SubscriptEffect() {
       super(SubscriptSpan.class);
+    }
+  }
+
+  class ImagesTextWatcher implements TextWatcher {
+
+    private boolean mImageAdded;
+
+    public final boolean isImageAdded() {
+      return mImageAdded;
+    }
+
+    @Override
+    public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
+      // nothing to do
+    }
+
+    @Override
+    public final void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
+      mImageAdded = (count > 0) && s.toString().substring(start, start + count).contains(IMAGE_HOLDER_STRING);
+    }
+
+    @Override
+    public final void afterTextChanged(final Editable s) {
+      if (isImageAdded()) {
+        final List<Integer> holderIndexes = StringsUtil.getIndexesOf(s.toString(), IMAGE_HOLDER_STRING);
+        final List<Integer> imageIndexes = EffectsHandler.getImageIndexes(s);
+        int i = 0;
+
+        while(i < holderIndexes.size()) {
+          boolean found = false;
+          final Integer current = holderIndexes.get(i);
+          for (final Integer imageIdx : imageIndexes) {
+            if (imageIdx.equals(current)) {
+              holderIndexes.remove(current);
+              imageIndexes.remove(imageIdx);
+              found = true;
+              break;
+            }
+          }
+
+          if (!found) {
+            i++;
+          }
+        }
+
+        int offset = 0;
+        for (final Integer holder : holderIndexes) {
+          final int holderPosition = holder - offset;
+          s.replace(holderPosition, holderPosition + IMAGE_HOLDER_STRING.length(), "");
+          offset += IMAGE_HOLDER_STRING.length();
+        }
+      }
     }
   }
 
