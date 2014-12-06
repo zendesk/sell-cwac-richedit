@@ -7,7 +7,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.Spanned;
 import android.util.AttributeSet;
-import android.widget.EditText;
 
 import java.util.ArrayList;
 import java.util.List;
