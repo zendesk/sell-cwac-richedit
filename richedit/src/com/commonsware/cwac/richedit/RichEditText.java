@@ -15,18 +15,11 @@
 package com.commonsware.cwac.richedit;
 
 import com.futuresimple.base.richedit.text.EffectsHandler;
-import com.futuresimple.base.richedit.text.HtmlParsingListener;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
-import com.futuresimple.base.richedit.ui.LinkableEditText;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.assist.FailReason;
-import com.nostra13.universalimageloader.core.assist.ImageSize;
-import com.nostra13.universalimageloader.core.assist.ViewScaleType;
-import com.nostra13.universalimageloader.core.imageaware.NonViewAware;
-import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+import com.futuresimple.base.richedit.ui.CustomSpannableEditText;
 
 import android.app.Activity;
 import android.content.Context;
@@ -42,21 +35,16 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
-import android.text.style.ReplacementSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
 import android.text.style.TypefaceSpan;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
-import android.view.View;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Custom widget that simplifies adding rich text editing
@@ -68,7 +56,7 @@ import java.util.Set;
  * http://code.google.com/p/droid-writer
  * 
  */
-public class RichEditText extends LinkableEditText implements EditorActionModeListener, ImageLoadingListener, HtmlParsingListener {
+public class RichEditText extends CustomSpannableEditText implements EditorActionModeListener {
 
   public static final Effect<Boolean, StyleSpan> BOLD = new StyleEffect(Typeface.BOLD);
   public static final Effect<Boolean, StyleSpan> ITALIC = new StyleEffect(Typeface.ITALIC);
@@ -90,8 +78,6 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
   private boolean keyboardShortcuts=true;
 
   private int mLastMeasuredWidth;
-
-  private final Set<String> mImagesToLoad = new HashSet<>();
 
   /*
    * EFFECTS is a roster of all defined effects, for simpler
@@ -447,45 +433,6 @@ public class RichEditText extends LinkableEditText implements EditorActionModeLi
   public void disableActionModes() {
     setCustomSelectionActionModeCallback(null);
     mainMode=null;
-  }
-
-  @Override
-  public final void onLoadingStarted(final String source, final View view) {
-    // nothing to do
-  }
-
-  @Override
-  public final void onLoadingFailed(final String source, final View view, final FailReason failReason) {
-    EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
-  }
-
-  @Override
-  public final void onLoadingComplete(final String source, final View view, final Bitmap bitmap) {
-    final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-    drawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
-    EffectsHandler.applyLoadedImageSpan(getText(), source, getMeasuredWidth(), drawable);
-  }
-
-  @Override
-  public final void onLoadingCancelled(final String source, final View view) {
-    EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
-  }
-
-  @Override
-  public final void onImageFound(final String source) {
-    mImagesToLoad.add(source);
-  }
-
-  @Override
-  public final void onParsingFinished() {
-    for (final String imageUri : mImagesToLoad) {
-      // 0x0 size means unknown
-      // also! do not pass uri parameter below (when creating NonViewAware object)
-      final NonViewAware nonViewAware = new NonViewAware(new ImageSize(0, 0), ViewScaleType.CROP);
-      ImageLoader.getInstance().displayImage(imageUri, nonViewAware, this);
-    }
-
-    mImagesToLoad.clear();
   }
 
   private void sanitizeStyleSpans(final Spanned text) {
