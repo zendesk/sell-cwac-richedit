@@ -3,6 +3,7 @@ package com.futuresimple.base.richedit.text.watcher;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 
 public abstract class BaseRichTextWatcher implements TextWatcher {
@@ -11,39 +12,36 @@ public abstract class BaseRichTextWatcher implements TextWatcher {
   private String mAddedText;
   private int mStart;
 
-  public final String getRemovedText() {
-    return mRemovedText;
-  }
-
-  public final String getAddedText() {
-    return mAddedText;
-  }
-
-  public final int getStart() {
-    return mStart;
-  }
-
   @Override
   public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
     mRemovedText = (count > 0) ? s.toString().substring(start, start + count) : null;
-    beforeTextChanged((SpannableStringBuilder) s, start, start + count);
+    if (!TextUtils.isEmpty(mRemovedText)) {
+      beforeTextRemoving((SpannableStringBuilder) s, mRemovedText, start);
+    }
   }
 
   @Override
   public final void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
     mAddedText = (count > 0) ? s.toString().substring(start, start + count) : null;
     mStart = start;
-    onTextChanged((SpannableStringBuilder) s, start);
   }
 
   @Override
-  public void afterTextChanged(final Editable s) {
+  public final void afterTextChanged(final Editable s) {
+    if (!TextUtils.isEmpty(mRemovedText)) {
+      onTextRemoved(s, mRemovedText, mStart);
+    }
+    if (!TextUtils.isEmpty(mAddedText)) {
+      onTextAdded(s, mAddedText, mStart);
+    }
   }
 
-  public void beforeTextChanged(final Spannable s, final int start, final int end) {
+  public void beforeTextRemoving(final Spannable s, final String toRemove, final int position) {
   }
 
-  public void onTextChanged(final Spannable s, final int start) {
+  public void onTextRemoved(final Editable s, final String removed, final int start) {
   }
 
+  public void onTextAdded(final Editable s, final String added, final int start) {
+  }
 }

@@ -553,17 +553,18 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
   class ImagesTextWatcher extends BaseRichTextWatcher {
 
     @Override
-    public final void beforeTextChanged(final Spannable s, final int start, final int end) {
-      if (!TextUtils.isEmpty(getRemovedText()) && end - start >= EffectsHandler.getShortestImageAnchorLength()) {
+    public final void beforeTextRemoving(final Spannable s, final String toRemove, final int position) {
+      final int length = toRemove.length();
+      if (length >= EffectsHandler.getShortestImageAnchorLength()) {
         // we need those +-1 to do not "touch" some neighbour images
-        EffectsHandler.removeAllSpansFrom(s, start + 1, end - 1, ImageSpan.class);
+        EffectsHandler.removeAllSpansFrom(s, position + 1, position + length - 1, ImageSpan.class);
       }
     }
 
     @Override
-    public final void onTextChanged(final Spannable s, final int offset) {
-      if (!TextUtils.isEmpty(getAddedText()) && EffectsHandler.hasImageAnchors(getAddedText())) {
-        final List<ImageAnchor> imageAnchors = EffectsHandler.getImageAnchors(getAddedText());
+    public final void onTextAdded(final Editable s, final String added, final int offset) {
+      if (EffectsHandler.hasImageAnchors(added)) {
+        final List<ImageAnchor> imageAnchors = EffectsHandler.getImageAnchors(added);
         if (!imageAnchors.isEmpty()) {
           for (final ImageAnchor imageAnchor : imageAnchors) {
             // we need those +-1 to do not "touch" some neighbour images
