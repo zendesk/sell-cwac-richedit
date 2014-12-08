@@ -10,12 +10,18 @@ import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.ImageSpan;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class EffectsHandler {
+
+  public static final String CODE_ANCHOR_OPEN = "{{";
+  public static final String CODE_ANCHOR_CLOSE = "}}";
+
+  public static final String CODE_IMAGE_OPEN = CODE_ANCHOR_OPEN + "img:";
 
   private final Effect mParentEffect;
 
@@ -391,6 +397,72 @@ public class EffectsHandler {
         str.replace(i, i + 1, "");
         selection.end--;
       }
+    }
+  }
+
+  public static <T> void removeAllSpansFrom(final Spannable s, final int start, final int end, final Class<T> kind) {
+    final T[] spans = s.getSpans(start, end, kind);
+    for (final T span : spans) {
+      s.removeSpan(span);
+    }
+  }
+
+  public static String buildImageAnchor(final String source) {
+    return CODE_IMAGE_OPEN + (TextUtils.isEmpty(source) ? null : source) + CODE_ANCHOR_CLOSE;
+  }
+
+  public static boolean hasImageAnchors(final String text) {
+    return text.length() >= getShortestImageAnchorLength() && text.contains(CODE_IMAGE_OPEN) && text.contains(CODE_ANCHOR_CLOSE);
+  }
+
+  public static int getShortestImageAnchorLength() {
+    return (CODE_IMAGE_OPEN + CODE_ANCHOR_CLOSE).length();
+  }
+
+  public static List<ImageAnchor> getImageAnchors(final String text) {
+    final List<ImageAnchor> imageAnchors = new ArrayList<>();
+    int open = text.indexOf(CODE_IMAGE_OPEN);
+    while (open >= 0) {
+      final int offset = open + CODE_IMAGE_OPEN.length();
+      final int close = text.indexOf(CODE_ANCHOR_CLOSE, offset);
+      if (close >= offset) {
+        imageAnchors.add(new ImageAnchor(
+            text.substring(open, close + CODE_ANCHOR_CLOSE.length()),
+            open
+        ));
+      } else {
+        break;
+      }
+      open = text.indexOf(open, offset);
+    }
+    return imageAnchors;
+  }
+
+  public static final class ImageAnchor {
+    private final String mAnchor;
+    private final int mStart;
+    private final int mEnd;
+
+    public ImageAnchor(final String anchor, final int start) {
+      if (!EffectsHandler.hasImageAnchors(anchor)) {
+        throw new IllegalArgumentException("No image anchor found in '" + anchor + "'!");
+      }
+
+      mAnchor = anchor;
+      mStart = start;
+      mEnd = start + anchor.length();
+    }
+
+    public final String getSource() {
+      return mAnchor.substring(CODE_IMAGE_OPEN.length(), mAnchor.length() - CODE_ANCHOR_CLOSE.length());
+    }
+
+    public final int getStart() {
+      return mStart;
+    }
+
+    public final int getEnd() {
+      return mEnd;
     }
   }
 

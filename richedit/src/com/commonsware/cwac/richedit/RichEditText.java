@@ -15,6 +15,7 @@
 package com.commonsware.cwac.richedit;
 
 import com.futuresimple.base.richedit.text.EffectsHandler;
+import com.futuresimple.base.richedit.text.EffectsHandler.ImageAnchor;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
@@ -31,10 +32,12 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
+import android.text.style.ImageSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
@@ -133,6 +136,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
   private void initEffectWatchers() {
     addTextChangedListener(new ListItemTextWatcher());
+    addTextChangedListener(new ImagesTextWatcher());
   }
 
   /*
@@ -543,6 +547,76 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
       SimpleBooleanEffect<SubscriptSpan> {
     SubscriptEffect() {
       super(SubscriptSpan.class);
+    }
+  }
+
+  public static abstract class BaseRichTextWatcher implements TextWatcher {
+
+    private String mRemovedText;
+    private String mAddedText;
+
+    public final String getRemovedText() {
+      return mRemovedText;
+    }
+
+    public final String getAddedText() {
+      return mAddedText;
+    }
+
+    @Override
+    public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
+      mRemovedText = (count > 0) ? s.toString().substring(start, start + count) : null;
+      beforeTextChanged((SpannableStringBuilder) s, start, start + count);
+    }
+
+    @Override
+    public final void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
+      mAddedText = (count > 0) ? s.toString().substring(start, start + count) : null;
+      onTextChanged((SpannableStringBuilder) s, start);
+    }
+
+    @Override
+    public void afterTextChanged(final Editable s) {
+      // feel free to override
+    }
+
+    public void beforeTextChanged(final Spannable s, final int start, final int end) {
+      // feel free to override
+    }
+
+    public void onTextChanged(final Spannable s, final int start) {
+      // feel free to override
+    }
+
+  }
+
+  class ImagesTextWatcher extends BaseRichTextWatcher {
+
+    @Override
+    public final void beforeTextChanged(final Spannable s, final int start, final int end) {
+      if (!TextUtils.isEmpty(getRemovedText()) && end - start >= EffectsHandler.getShortestImageAnchorLength()) {
+        // we need those +-1 to do not "touch" some neighbour images
+        EffectsHandler.removeAllSpansFrom(s, start + 1, end - 1, ImageSpan.class);
+      }
+    }
+
+    @Override
+    public final void onTextChanged(final Spannable s, final int offset) {
+      if (!TextUtils.isEmpty(getAddedText()) && EffectsHandler.hasImageAnchors(getAddedText())) {
+        final List<ImageAnchor> imageAnchors = EffectsHandler.getImageAnchors(getAddedText());
+        if (!imageAnchors.isEmpty()) {
+          for (final ImageAnchor imageAnchor : imageAnchors) {
+            // we need those +-1 to do not "touch" some neighbour images
+            final ImageSpan[] spans = s.getSpans(offset + imageAnchor.getStart() + 1, offset + imageAnchor.getEnd() - 1, ImageSpan.class);
+            if (spans.length == 0) {
+              final String imageSource = imageAnchor.getSource();
+              EffectsHandler.applyDummyImage(s, offset + imageAnchor.getStart(), offset + imageAnchor.getEnd(), imageSource, getResources());
+              onImageFound(imageSource);
+            }
+          }
+        }
+        onParsingFinished();
+      }
     }
   }
 
