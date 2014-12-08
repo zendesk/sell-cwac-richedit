@@ -6,9 +6,13 @@ import com.commonsware.cwac.richedit.Selection;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.Spannable;
+import android.text.Spanned;
 import android.text.style.ImageSpan;
 
 import java.util.ArrayList;
@@ -287,18 +291,12 @@ public class EffectsHandler {
     return true;
   }
 
-  private static Drawable getImageBrokenDrawable(final Resources resources) {
-    final Drawable drawable = resources.getDrawable(R.drawable.image_broken);
-    drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-    return drawable;
-  }
-
   public static void applyImageLoadingFailedImageSpan(final Spannable text, final Resources resources, final int start, final int end, final String imageUri) {
-    applyLoadedImageSpan(text, start, end, imageUri, getImageBrokenDrawable(resources));
+    applyLoadedImageSpan(text, start, end, imageUri, resources.getDrawable(R.drawable.image_broken));
   }
 
   public static void applyImageLoadingFailedImageSpan(final Spannable text, final Resources resources, final String imageUri) {
-    applyLoadedImageSpan(text, imageUri, null, getImageBrokenDrawable(resources));
+    applyLoadedImageSpan(text, imageUri, null, resources.getDrawable(R.drawable.image_broken));
   }
 
   public static void applyLoadedImageSpan(final Spannable text, final int start, final int end, final String imageUri, Drawable drawable) {
@@ -312,7 +310,7 @@ public class EffectsHandler {
       text.removeSpan(imageSpan);
     }
 
-    text.setSpan(new ImageSpan(drawable, imageUri), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    applySingleImageSpan(text, start, end, imageUri, null, drawable);
   }
 
   public static void applyLoadedImageSpan(final Spannable text, final String imageUri, final Integer maxWidth, Drawable drawable) {
@@ -332,12 +330,19 @@ public class EffectsHandler {
       final int start = text.getSpanStart(imageSpan);
       final int end = text.getSpanEnd(imageSpan);
       text.removeSpan(imageSpan);
-      text.setSpan(
-          (maxWidth == null)
-              ? new ImageSpan(drawable, imageUri)
-              : new ResizableImageSpan(drawable, imageUri, maxWidth),
-          start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      applySingleImageSpan(text, start, end, imageUri, maxWidth, drawable);
     }
+  }
+
+  public static void applyDummyImage(final Spannable text, final int start, final int end, final String source, final Resources resources) {
+    final Bitmap bitmap = Bitmap.createBitmap(0, 0, Config.RGB_565);
+    final Drawable dummy = new BitmapDrawable(resources, bitmap);
+    applySingleImageSpan(text, start, end, source, null, dummy);
+  }
+
+  public static void applySingleImageSpan(final Spannable text, final int start, final int end, final String source, final Integer maxWidth, final Drawable drawable) {
+    drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    text.setSpan((maxWidth == null) ? new ImageSpan(drawable, source) : new ResizableImageSpan(drawable, source, maxWidth), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
   }
 
   public static void extendSelectionToTheLineWidth(final CharSequence str, final Selection selection) {
