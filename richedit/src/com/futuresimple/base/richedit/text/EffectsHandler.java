@@ -6,9 +6,6 @@ import com.commonsware.cwac.richedit.Selection;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 
 import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.Spannable;
@@ -335,9 +332,7 @@ public class EffectsHandler {
   }
 
   public static void applyDummyImage(final Spannable text, final int start, final int end, final String source, final Resources resources) {
-    final Bitmap bitmap = Bitmap.createBitmap(0, 0, Config.RGB_565);
-    final Drawable dummy = new BitmapDrawable(resources, bitmap);
-    applySingleImageSpan(text, start, end, source, null, dummy);
+    applySingleImageSpan(text, start, end, source, null, resources.getDrawable(R.drawable.dummy));
   }
 
   public static void applySingleImageSpan(final Spannable text, final int start, final int end, final String source, final Integer maxWidth, final Drawable drawable) {
