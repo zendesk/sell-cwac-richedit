@@ -1,5 +1,7 @@
 package com.futuresimple.base.richedit.ui;
 
+import com.futuresimple.base.richedit.text.watcher.ReplacementSpansTextWatcher;
+
 import android.content.Context;
 import android.text.style.ReplacementSpan;
 import android.util.AttributeSet;
@@ -8,14 +10,21 @@ import android.widget.EditText;
 public class FixedSelectionEditText extends EditText {
   public FixedSelectionEditText(Context context) {
     super(context);
+    initWatchers();
   }
 
   public FixedSelectionEditText(Context context, AttributeSet attrs) {
     super(context, attrs);
+    initWatchers();
   }
 
   public FixedSelectionEditText(Context context, AttributeSet attrs, int defStyle) {
     super(context, attrs, defStyle);
+    initWatchers();
+  }
+
+  private void initWatchers() {
+    addTextChangedListener(new ReplacementSpansTextWatcher());
   }
 
   @Override

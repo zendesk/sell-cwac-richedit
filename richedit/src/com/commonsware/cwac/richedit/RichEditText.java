@@ -20,6 +20,7 @@ import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
+import com.futuresimple.base.richedit.text.watcher.BaseRichTextWatcher;
 import com.futuresimple.base.richedit.ui.CustomSpannableEditText;
 
 import android.app.Activity;
@@ -32,7 +33,6 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
-import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -548,46 +548,6 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
     SubscriptEffect() {
       super(SubscriptSpan.class);
     }
-  }
-
-  public static abstract class BaseRichTextWatcher implements TextWatcher {
-
-    private String mRemovedText;
-    private String mAddedText;
-
-    public final String getRemovedText() {
-      return mRemovedText;
-    }
-
-    public final String getAddedText() {
-      return mAddedText;
-    }
-
-    @Override
-    public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
-      mRemovedText = (count > 0) ? s.toString().substring(start, start + count) : null;
-      beforeTextChanged((SpannableStringBuilder) s, start, start + count);
-    }
-
-    @Override
-    public final void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
-      mAddedText = (count > 0) ? s.toString().substring(start, start + count) : null;
-      onTextChanged((SpannableStringBuilder) s, start);
-    }
-
-    @Override
-    public void afterTextChanged(final Editable s) {
-      // feel free to override
-    }
-
-    public void beforeTextChanged(final Spannable s, final int start, final int end) {
-      // feel free to override
-    }
-
-    public void onTextChanged(final Spannable s, final int start) {
-      // feel free to override
-    }
-
   }
 
   class ImagesTextWatcher extends BaseRichTextWatcher {
