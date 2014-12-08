@@ -1,5 +1,7 @@
 package com.futuresimple.base.richedit.text.watcher;
 
+import com.futuresimple.base.richedit.text.EffectsHandler;
+
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.style.ReplacementSpan;
@@ -8,11 +10,15 @@ public final class ReplacementSpansTextWatcher extends BaseRichTextWatcher {
   private boolean mRemovingReplacementSpan;
 
   @Override
-  public void beforeTextRemoving(Spannable s, String toRemove, int position) {
+  public final void beforeTextRemoving(final Spannable s, final String toRemove, final int position) {
     mRemovingReplacementSpan = false;
-    if (toRemove.length() == 1) {
+    final int length = toRemove.length();
+    if (length == 1) {
       final ReplacementSpan[] spans = s.getSpans(position, position, ReplacementSpan.class);
       mRemovingReplacementSpan = (spans.length > 0) && (s.getSpanEnd(spans[0]) == position + 1);
+    } else {
+      // -1 : do not touch neighbour from the right
+      EffectsHandler.removeAllSpansFrom(s, position + 1, position + length - 1, ReplacementSpan.class);
     }
   }
 
