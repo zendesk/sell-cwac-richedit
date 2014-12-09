@@ -400,13 +400,6 @@ public class EffectsHandler {
     }
   }
 
-  public static <T> void removeAllSpansFrom(final Spannable s, final int start, final int end, final Class<T> kind) {
-    final T[] spans = s.getSpans(start, end, kind);
-    for (final T span : spans) {
-      s.removeSpan(span);
-    }
-  }
-
   public static String buildImageAnchor(final String source) {
     return CODE_IMAGE_OPEN + (TextUtils.isEmpty(source) ? null : source) + CODE_ANCHOR_CLOSE;
   }
