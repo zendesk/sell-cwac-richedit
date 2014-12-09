@@ -14,12 +14,17 @@
 
 package com.commonsware.cwac.richedit;
 
+import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
+import static android.text.Spanned.SPAN_EXCLUSIVE_INCLUSIVE;
+
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.EffectsHandler.ImageAnchor;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
+import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
+import com.futuresimple.base.richedit.text.style.util.SpansUtil;
 import com.futuresimple.base.richedit.text.watcher.BaseRichTextWatcher;
 import com.futuresimple.base.richedit.ui.CustomSpannableEditText;
 
@@ -135,8 +140,8 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
   }
 
   private void initEffectWatchers() {
-    addTextChangedListener(new ListItemTextWatcher());
     addTextChangedListener(new ImagesTextWatcher());
+    addTextChangedListener(new BulletListTextWatcher());
   }
 
   /*
@@ -572,8 +577,17 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
     }
   }
 
-  private class ListItemTextWatcher implements TextWatcher {
+  class BulletListTextWatcher implements TextWatcher {
     private boolean mNewLineAdded;
+    private String mAddedText;
+
+    public final boolean isNewLineAdded() {
+      return mNewLineAdded;
+    }
+
+    public final String getAddedText() {
+      return mAddedText;
+    }
 
     @Override
     public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
@@ -582,70 +596,55 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
     @Override
     public final void onTextChanged(final CharSequence s, final int start, final int before, final int count) {
-      if (count == 1) {
-        final String added = s.toString().substring(start, start + count);
-        mNewLineAdded = added.equals("\n");
-      }
+      mAddedText = s.toString().substring(start, start + count);
+      mNewLineAdded = (count == 1) && mAddedText.equals("\n");
     }
 
     @Override
     public final void afterTextChanged(final Editable s) {
-      sanitizeBullets(s);
-      if (mNewLineAdded) {
-        handleNewLineAdded(s);
-      } else {
-        handleListItemEditing(s);
-      }
-    }
-
-    private void sanitizeBullets(final Editable s) {
-      // remove bullets if there is no "\n" between them
       final Selection selection = new Selection(RichEditText.this);
-      final BulletSpan[] bullets = s.getSpans(0, selection.end, BulletSpan.class);
-      if (bullets.length > 1) {
-        final BulletSpan beforeLast = bullets[bullets.length - 2];
-        final BulletSpan last = bullets[bullets.length - 1];
-        final int start = s.getSpanStart(beforeLast);
-        final int end = s.getSpanEnd(last);
-        if (!s.toString().substring(start, end).contains("\n")) {
-          s.removeSpan(last);
+      final UnorderedListSpan list = SpansUtil.getLastSpanAt(s, selection, UnorderedListSpan.class);
+      if (list != null) {
+        ListEffect.sanitizeBullets(s, selection);
+        if (isNewLineAdded()) {
+          handleNewLineAdded(s, selection);
+        } else if (!TextUtils.isEmpty(getAddedText())) {
+          handleListItemEditing(s, selection);
         }
       }
     }
 
-    private void handleListItemEditing(final Editable s) {
-      final Selection selection = new Selection(RichEditText.this);
-      final BulletSpan[] bullets = s.getSpans(selection.start, selection.end, BulletSpan.class);
-      if (bullets.length > 0) {
-        final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(bullets[0]));
+    private void handleListItemEditing(final Editable s, final Selection selection) {
+      final BulletSpan currentBullet = SpansUtil.getLastSpanAt(s, selection, BulletSpan.class);
+      if (currentBullet != null) {
+        final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(currentBullet));
         if (EffectsHandler.isOpenFromTheRight(mode)) {
-          s.removeSpan(bullets[0]);
           EffectsHandler.extendSelectionToTheLineWidth(s, selection);
+          s.removeSpan(currentBullet);
           s.setSpan(
               new BulletSpan(),
-              selection.start, selection.end,
+              selection.start,
+              selection.end,
               (selection.isEmpty())
-                  ? Spanned.SPAN_EXCLUSIVE_INCLUSIVE
-                  : Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                  ? SPAN_EXCLUSIVE_INCLUSIVE
+                  : SPAN_EXCLUSIVE_EXCLUSIVE
           );
         }
       }
     }
 
-    private void handleNewLineAdded(final Editable s) {
-      final Selection selection = new Selection(RichEditText.this);
-      final BulletSpan[] bullets = s.getSpans(0, selection.end, BulletSpan.class);
-      if (bullets.length > 0) {
-        final BulletSpan lastBullet = bullets[bullets.length - 1];
+    private void handleNewLineAdded(final Spannable s, final Selection selection) {
+      final BulletSpan lastBullet = SpansUtil.getLastSpanAt(s, new Selection(0, selection.end), BulletSpan.class);
+      if (lastBullet != null) {
         final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(lastBullet));
         if (EffectsHandler.isOpenFromTheRight(mode)) {
-          // stop the list if it's previous item is empty
           s.removeSpan(lastBullet);
         } else {
-          s.setSpan(new BulletSpan(), selection.start, selection.end, Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+          s.setSpan(new BulletSpan(), selection.start, selection.end, SPAN_EXCLUSIVE_INCLUSIVE);
         }
       }
       mNewLineAdded = false;
     }
   }
+
 }
