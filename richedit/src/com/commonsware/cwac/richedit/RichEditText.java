@@ -635,7 +635,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
     private void handleNewLineAdded(final Spannable s, final Selection selection) {
       final BulletSpan lastBullet = SpansUtil.getLastSpanAt(s, new Selection(0, selection.end), BulletSpan.class);
-      if (lastBullet != null) {
+      if ((lastBullet != null) && (selection.start - s.getSpanEnd(lastBullet) <= 1)) {
         final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(lastBullet));
         if (EffectsHandler.isOpenFromTheRight(mode)) {
           s.removeSpan(lastBullet);
