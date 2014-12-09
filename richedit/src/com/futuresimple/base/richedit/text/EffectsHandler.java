@@ -6,19 +6,22 @@ import com.commonsware.cwac.richedit.Selection;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 
 import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.ImageSpan;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class EffectsHandler {
+
+  public static final String CODE_ANCHOR_OPEN = "{{";
+  public static final String CODE_ANCHOR_CLOSE = "}}";
+
+  public static final String CODE_IMAGE_OPEN = CODE_ANCHOR_OPEN + "img:";
 
   private final Effect mParentEffect;
 
@@ -335,9 +338,7 @@ public class EffectsHandler {
   }
 
   public static void applyDummyImage(final Spannable text, final int start, final int end, final String source, final Resources resources) {
-    final Bitmap bitmap = Bitmap.createBitmap(0, 0, Config.RGB_565);
-    final Drawable dummy = new BitmapDrawable(resources, bitmap);
-    applySingleImageSpan(text, start, end, source, null, dummy);
+    applySingleImageSpan(text, start, end, source, null, resources.getDrawable(R.drawable.dummy));
   }
 
   public static void applySingleImageSpan(final Spannable text, final int start, final int end, final String source, final Integer maxWidth, final Drawable drawable) {
@@ -396,6 +397,65 @@ public class EffectsHandler {
         str.replace(i, i + 1, "");
         selection.end--;
       }
+    }
+  }
+
+  public static String buildImageAnchor(final String source) {
+    return CODE_IMAGE_OPEN + (TextUtils.isEmpty(source) ? null : source) + CODE_ANCHOR_CLOSE;
+  }
+
+  public static boolean hasImageAnchors(final String text) {
+    return text.length() >= getShortestImageAnchorLength() && text.contains(CODE_IMAGE_OPEN) && text.contains(CODE_ANCHOR_CLOSE);
+  }
+
+  public static int getShortestImageAnchorLength() {
+    return (CODE_IMAGE_OPEN + CODE_ANCHOR_CLOSE).length();
+  }
+
+  public static List<ImageAnchor> getImageAnchors(final String text) {
+    final List<ImageAnchor> imageAnchors = new ArrayList<>();
+    int open = text.indexOf(CODE_IMAGE_OPEN);
+    while (open >= 0) {
+      final int offset = open + CODE_IMAGE_OPEN.length();
+      final int close = text.indexOf(CODE_ANCHOR_CLOSE, offset);
+      if (close >= offset) {
+        imageAnchors.add(new ImageAnchor(
+            text.substring(open, close + CODE_ANCHOR_CLOSE.length()),
+            open
+        ));
+      } else {
+        break;
+      }
+      open = text.indexOf(open, offset);
+    }
+    return imageAnchors;
+  }
+
+  public static final class ImageAnchor {
+    private final String mAnchor;
+    private final int mStart;
+    private final int mEnd;
+
+    public ImageAnchor(final String anchor, final int start) {
+      if (!EffectsHandler.hasImageAnchors(anchor)) {
+        throw new IllegalArgumentException("No image anchor found in '" + anchor + "'!");
+      }
+
+      mAnchor = anchor;
+      mStart = start;
+      mEnd = start + anchor.length();
+    }
+
+    public final String getSource() {
+      return mAnchor.substring(CODE_IMAGE_OPEN.length(), mAnchor.length() - CODE_ANCHOR_CLOSE.length());
+    }
+
+    public final int getStart() {
+      return mStart;
+    }
+
+    public final int getEnd() {
+      return mEnd;
     }
   }
 

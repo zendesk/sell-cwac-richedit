@@ -15,10 +15,12 @@
 package com.commonsware.cwac.richedit;
 
 import com.futuresimple.base.richedit.text.EffectsHandler;
+import com.futuresimple.base.richedit.text.EffectsHandler.ImageAnchor;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
+import com.futuresimple.base.richedit.text.watcher.BaseRichTextWatcher;
 import com.futuresimple.base.richedit.ui.CustomSpannableEditText;
 
 import android.app.Activity;
@@ -35,6 +37,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
+import android.text.style.ImageSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.SubscriptSpan;
@@ -133,6 +136,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
   private void initEffectWatchers() {
     addTextChangedListener(new ListItemTextWatcher());
+    addTextChangedListener(new ImagesTextWatcher());
   }
 
   /*
@@ -543,6 +547,28 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
       SimpleBooleanEffect<SubscriptSpan> {
     SubscriptEffect() {
       super(SubscriptSpan.class);
+    }
+  }
+
+  class ImagesTextWatcher extends BaseRichTextWatcher {
+
+    @Override
+    public final void onTextAdded(final Editable s, final String added, final int offset) {
+      if (EffectsHandler.hasImageAnchors(added)) {
+        final List<ImageAnchor> imageAnchors = EffectsHandler.getImageAnchors(added);
+        if (!imageAnchors.isEmpty()) {
+          for (final ImageAnchor imageAnchor : imageAnchors) {
+            // we need those +-1 to do not "touch" some neighbour images
+            final ImageSpan[] spans = s.getSpans(offset + imageAnchor.getStart() + 1, offset + imageAnchor.getEnd() - 1, ImageSpan.class);
+            if (spans.length == 0) {
+              final String imageSource = imageAnchor.getSource();
+              EffectsHandler.applyDummyImage(s, offset + imageAnchor.getStart(), offset + imageAnchor.getEnd(), imageSource, getResources());
+              onImageFound(imageSource);
+            }
+          }
+        }
+        onParsingFinished();
+      }
     }
   }
 

@@ -21,3 +21,6 @@ gen
 *.ipr
 *.iws
 local.properties
+
+# OSX
+*.DS_Store
