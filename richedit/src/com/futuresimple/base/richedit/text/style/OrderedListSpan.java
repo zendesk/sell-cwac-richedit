@@ -16,4 +16,9 @@ public class OrderedListSpan implements ListSpan {
   public Type getListType() {
     return Type.ORDERED;
   }
+
+  @Override
+  public final ListSpan newSpan() {
+    return new OrderedListSpan();
+  }
 }

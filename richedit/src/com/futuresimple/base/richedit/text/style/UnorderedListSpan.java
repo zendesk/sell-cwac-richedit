@@ -6,4 +6,9 @@ public class UnorderedListSpan implements ListSpan {
   public Type getListType() {
     return Type.UNORDERED;
   }
+
+  @Override
+  public final ListSpan newSpan() {
+    return new UnorderedListSpan();
+  }
 }

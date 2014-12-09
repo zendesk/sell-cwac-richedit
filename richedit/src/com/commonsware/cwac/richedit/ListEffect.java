@@ -10,6 +10,7 @@ import com.futuresimple.base.richedit.text.style.ListSpan.Type;
 import com.futuresimple.base.richedit.text.style.NumberSpan;
 import com.futuresimple.base.richedit.text.style.OrderedListSpan;
 import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
+import com.futuresimple.base.richedit.text.style.util.SpansUtil;
 
 import android.text.Editable;
 import android.text.Spannable;
@@ -126,10 +127,24 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     }
   }
 
+  public static void sanitizeBullets(final Editable s, final Selection selection) {
+    // remove bullets if there is no "\n" between them
+    final List<BulletSpan> bullets = SpansUtil.getSpansByOrder(s, new Selection(0, selection.end), BulletSpan.class);
+    if (bullets.size() > 1) {
+      final BulletSpan beforeLast = bullets.get(bullets.size() - 2);
+      final BulletSpan last = bullets.get(bullets.size() - 1);
+      final int start = s.getSpanStart(beforeLast);
+      final int end = s.getSpanEnd(last);
+      if (!s.toString().substring(start, end).contains("\n")) {
+        s.removeSpan(last);
+      }
+    }
+  }
+
   public static void sanitizeBulletLists(final Spannable str) {
     removeListMarks(str, new Selection(0, str.length()));
 
-    final List<BulletSpan> bullets = EffectsHandler.getSpansByOrder(str, new Selection(0, str.length()), BulletSpan.class);
+    final List<BulletSpan> bullets = SpansUtil.getSpansByOrder(str, new Selection(0, str.length()), BulletSpan.class);
 
     final List<Integer> starts = new ArrayList<>();
     final List<Integer> ends = new ArrayList<>();
