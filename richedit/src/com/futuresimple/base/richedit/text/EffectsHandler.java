@@ -426,7 +426,7 @@ public class EffectsHandler {
       } else {
         break;
       }
-      open = text.indexOf(open, offset);
+      open = text.indexOf(CODE_IMAGE_OPEN, offset);
     }
     return imageAnchors;
   }
