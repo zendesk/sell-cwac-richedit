@@ -127,7 +127,7 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     }
   }
 
-  public static void sanitizeBullets(final Editable s, final Selection selection) {
+  public static void sanitizeBullets(final Spannable s, final Selection selection) {
     // remove bullets if there is no "\n" between them
     final List<BulletSpan> bullets = SpansUtil.getSpansByOrder(s, new Selection(0, selection.end), BulletSpan.class);
     if (bullets.size() > 1) {

@@ -12,6 +12,14 @@ public abstract class BaseRichTextWatcher implements TextWatcher {
   private String mAddedText;
   private int mStart;
 
+  public final String getRemovedText() {
+    return mRemovedText;
+  }
+
+  public final String getAddedText() {
+    return mAddedText;
+  }
+
   @Override
   public final void beforeTextChanged(final CharSequence s, final int start, final int count, final int after) {
     mRemovedText = (count > 0) ? s.toString().substring(start, start + count) : null;
