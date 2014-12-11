@@ -30,6 +30,17 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
   private final Set<String> mImagesToLoad = new HashSet<>();
 
+  private CustomSpansState mLastState = null;
+  private boolean mStateRestored;
+
+  public final CustomSpansState getLastState() {
+    return mLastState;
+  }
+
+  public final boolean isStateRestored() {
+    return mStateRestored;
+  }
+
   public CustomSpannableEditText(final Context context) {
     super(context);
   }
@@ -72,6 +83,9 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
     reloadImages(customState.getImageHolders());
     applyLinks(customState.getLinkHolders());
+
+    mLastState = null;
+    mStateRestored = true;
   }
 
   private List<LinkHolder> removeAllLinks() {
@@ -105,7 +119,9 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     final List<ImageHolder> imageHolders = removeAllImages();
     final List<LinkHolder> linkHolders = removeAllLinks();
 
-    return new CustomSpansState(super.onSaveInstanceState(), imageHolders, linkHolders);
+    mStateRestored = false;
+    mLastState = new CustomSpansState(super.onSaveInstanceState(), imageHolders, linkHolders);
+    return mLastState;
   }
 
   @Override
