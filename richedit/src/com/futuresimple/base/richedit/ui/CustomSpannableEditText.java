@@ -17,7 +17,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.Spanned;
-import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -53,14 +52,6 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     super(context, attrs, defStyle);
   }
 
-  private void reloadImages(final List<ImageHolder> imageHolders) {
-    for (final ImageHolder imageHolder : imageHolders) {
-      EffectsHandler.applyDummyImage(getText(), imageHolder.getStart(), imageHolder.getEnd(), imageHolder.getSource(), getResources());
-      onImageFound(imageHolder.getSource());
-    }
-    onParsingFinished();
-  }
-
   private void applyLinks(final List<LinkHolder> linkHolders) {
     for (final LinkHolder linkHolder : linkHolders) {
       getText().setSpan(
@@ -81,7 +72,6 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     final CustomSpansState customState = (CustomSpansState) state;
     super.onRestoreInstanceState(customState.getSuperState());
 
-    reloadImages(customState.getImageHolders());
     applyLinks(customState.getLinkHolders());
 
     mLastState = null;
@@ -99,28 +89,14 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     return linkHolders;
   }
 
-  private List<ImageHolder> removeAllImages() {
-    final List<ImageHolder> imageHolders = new ArrayList<>();
-    final ImageSpan[] images = getText().getSpans(0, getText().length(), ImageSpan.class);
-    for (final ImageSpan image : images) {
-      final int start = getText().getSpanStart(image);
-      final int end = getText().getSpanEnd(image);
-      imageHolders.add(new ImageHolder(image.getSource(), start, end));
-      getText().removeSpan(image);
-    }
-
-    return imageHolders;
-  }
-
   @Override
   public Parcelable onSaveInstanceState() {
     // do not call removeAllLinks() inline!!!
     // All "removing" operations have to be done before calling super.onSaveInstanceState() !
-    final List<ImageHolder> imageHolders = removeAllImages();
     final List<LinkHolder> linkHolders = removeAllLinks();
 
     mStateRestored = false;
-    mLastState = new CustomSpansState(super.onSaveInstanceState(), imageHolders, linkHolders);
+    mLastState = new CustomSpansState(super.onSaveInstanceState(), linkHolders);
     return mLastState;
   }
 
@@ -164,27 +140,12 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
   static final class CustomSpansState extends BaseSavedState {
 
-    private final List<ImageHolder> mImageHolders = new ArrayList<>();
     private final List<LinkHolder> mLinkHolders = new ArrayList<>();
 
     public CustomSpansState(final Parcel source) {
       super(source);
 
-      readImages(source);
       readLinks(source);
-    }
-
-    private void readImages(final Parcel source) {
-      final int imagesCount = source.readInt();
-      if (imagesCount > 0) {
-        for (int i = 0; i < imagesCount; i++) {
-          mImageHolders.add(new ImageHolder(
-              source.readString(),
-              source.readInt(),
-              source.readInt()
-          ));
-        }
-      }
     }
 
     private void readLinks(final Parcel source) {
@@ -202,33 +163,16 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
       }
     }
 
-    public CustomSpansState(final Parcelable superState, final List<ImageHolder> imageHolders, final List<LinkHolder> linkHolders) {
+    public CustomSpansState(final Parcelable superState, final List<LinkHolder> linkHolders) {
       super(superState);
-
-      if (imageHolders != null) {
-        mImageHolders.addAll(imageHolders);
-      }
 
       if (linkHolders != null) {
         mLinkHolders.addAll(linkHolders);
       }
     }
 
-    public final List<ImageHolder> getImageHolders() {
-      return mImageHolders;
-    }
-
     public final List<LinkHolder> getLinkHolders() {
       return mLinkHolders;
-    }
-
-    private void writeImages(final Parcel destination) {
-      destination.writeInt(mImageHolders.size());
-      for (final ImageHolder imageHolder : mImageHolders) {
-        destination.writeString(imageHolder.getSource());
-        destination.writeInt(imageHolder.getStart());
-        destination.writeInt(imageHolder.getEnd());
-      }
     }
 
     private void writeLinks(final Parcel destination) {
@@ -246,7 +190,6 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     public void writeToParcel(final Parcel destination, final int flags) {
       super.writeToParcel(destination, flags);
 
-      writeImages(destination);
       writeLinks(destination);
     }
 
@@ -263,30 +206,6 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
             return new CustomSpansState[size];
           }
         };
-  }
-
-  static final class ImageHolder {
-    private final String mSource;
-    private final int mStart;
-    private final int mEnd;
-
-    public ImageHolder(final String source, final int start, final int end) {
-      mSource = source;
-      mStart = start;
-      mEnd = end;
-    }
-
-    public final String getSource() {
-      return mSource;
-    }
-
-    public final int getStart() {
-      return mStart;
-    }
-
-    public final int getEnd() {
-      return mEnd;
-    }
   }
 
   static final class LinkHolder {
