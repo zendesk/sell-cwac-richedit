@@ -47,7 +47,7 @@ public class EffectsHandler {
       return Spannable.SPAN_EXCLUSIVE_EXCLUSIVE;
     }
 
-    throw new IllegalStateException("Not supported span flags: " + flags);
+    return flags;
   }
 
   private int openFromTheLeft(final int mode) {
