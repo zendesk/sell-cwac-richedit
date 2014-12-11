@@ -39,6 +39,7 @@ import android.text.Layout;
 import android.text.Spannable;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
 import android.text.style.ImageSpan;
 import android.text.style.StrikethroughSpan;
@@ -84,6 +85,8 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
   private boolean keyboardShortcuts=true;
 
   private int mLastMeasuredWidth;
+
+  private TextWatcher mBulletsWatcher = new BulletListTextWatcher();
 
   /*
    * EFFECTS is a roster of all defined effects, for simpler
@@ -139,7 +142,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
   private void initEffectWatchers() {
     addTextChangedListener(new ImagesTextWatcher());
-    addTextChangedListener(new BulletListTextWatcher());
+    addTextChangedListener(mBulletsWatcher);
   }
 
   /*
@@ -461,13 +464,17 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
   }
 
   public final void setText(final Spanned text) {
+    removeTextChangedListener(mBulletsWatcher);
     sanitizeStyleSpans(text);
     super.setText(text);
+    addTextChangedListener(mBulletsWatcher);
   }
 
   public final void append(final Spanned text) {
+    removeTextChangedListener(mBulletsWatcher);
     sanitizeStyleSpans(text);
     super.append(text);
+    addTextChangedListener(mBulletsWatcher);
   }
 
   public final void refitBigImagesToScreenWidth() {
