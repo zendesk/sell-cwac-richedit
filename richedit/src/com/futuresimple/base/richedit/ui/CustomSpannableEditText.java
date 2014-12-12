@@ -70,7 +70,9 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     }
 
     final CustomSpansState customState = (CustomSpansState) state;
-    super.onRestoreInstanceState(customState.getSuperState());
+    if (getEditableText().length() == 0) {
+      super.onRestoreInstanceState(customState.getSuperState());
+    }
 
     applyLinks(customState.getLinkHolders());
 
