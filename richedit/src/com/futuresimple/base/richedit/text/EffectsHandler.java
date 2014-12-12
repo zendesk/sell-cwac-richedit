@@ -349,7 +349,7 @@ public class EffectsHandler {
   public static void extendSelectionToTheLineWidth(final CharSequence str, final Selection selection) {
     // in case when we have partly selected the line
     // we need to start the list from it's beginning
-    if (selection.start > 0) {
+    if (selection.start > 0 && selection.start < str.length()) {
       for (int i = selection.start; i >= 0; i--) {
         if (str.charAt(i) == '\n') {
           if (i == selection.start) {
