@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.Spanned;
+import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -110,17 +111,26 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
   @Override
   public final void onLoadingFailed(final String source, final View view, final FailReason failReason) {
     EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
+    nullLayouts();
   }
 
   @Override
   public final void onLoadingComplete(final String source, final View view, final Bitmap bitmap) {
     final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
     EffectsHandler.applyLoadedImageSpan(getText(), source, getMeasuredWidth(), drawable);
+    nullLayouts();
   }
 
   @Override
   public final void onLoadingCancelled(final String source, final View view) {
     EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
+    nullLayouts();
+  }
+
+  private void nullLayouts() {
+    //This is ugly hack to call private method "nullLayouts" from TextView
+    setEllipsize(TruncateAt.END);
+    setEllipsize(null);
   }
 
   @Override
