@@ -123,7 +123,7 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
       }
 
       for (int i = start; i <= end; i++) {
-        if (str.charAt(i) == '\n') {
+        if (str.charAt(i) == '\n' || i == end) {
           applyItemSpan(str, start, i, span, SPAN_EXCLUSIVE_EXCLUSIVE);
           start = i + 1;
         }
