@@ -118,6 +118,10 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
       int start = selection.start;
       int end = selection.end;
 
+      if (end >= str.length()) {
+        end = str.length() - 1;
+      }
+
       for (int i = start; i <= end; i++) {
         if (str.charAt(i) == '\n') {
           applyItemSpan(str, start, i, span, SPAN_EXCLUSIVE_EXCLUSIVE);
