@@ -626,9 +626,6 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
     @Override
     public final void onTextAdded(final Editable s, final String added, final int start) {
-      if (start == 0 && added.length() == s.length() && s.getSpans(0, s.length(), BulletSpan.class).length > 0) {
-        return;
-      }
       final Selection selection = new Selection(RichEditText.this);
       final BulletSpan lastBullet = SpansUtil.getLastSpanAt(s, new Selection(0, start + added.length()), BulletSpan.class);
       if (lastBullet != null) {
