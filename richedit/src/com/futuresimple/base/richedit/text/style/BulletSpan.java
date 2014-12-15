@@ -20,74 +20,75 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Path.Direction;
-import android.os.Parcel;
 import android.text.Layout;
 import android.text.Spanned;
+import android.text.style.LeadingMarginSpan;
 
-public class BulletSpan extends android.text.style.BulletSpan {
+public class BulletSpan implements LeadingMarginSpan {
+  public static final int STANDARD_GAP_WIDTH = 35;
+  private static final int BULLET_RADIUS = 7;
 
-  private static final int STANDARD_BULLET_RADIUS = 6;
-  private static final int STANDARD_GAP_WIDTH = 35;
+  private final int mBulletRadius;
+  private final int mGapWidth;
+  private final int mColor;
+
+  private final boolean mWantColor;
 
   private static Path sBulletPath = null;
 
-  private final int bulletRadius;
-  private final int color;
-  private final int gapWidth;
-  private boolean mWantColor = false;
-
   public BulletSpan() {
-    super();
-    bulletRadius = STANDARD_BULLET_RADIUS;
-    gapWidth = STANDARD_GAP_WIDTH;
-    color = 0;
+    this(BULLET_RADIUS, STANDARD_GAP_WIDTH, 0, false);
   }
 
-  public BulletSpan(int bulletRadius) {
-    super();
-    this.bulletRadius = bulletRadius;
-    gapWidth = STANDARD_GAP_WIDTH;
-    color = 0;
+  public BulletSpan(final int bulletRadius, final int gapWidth) {
+    this(bulletRadius, gapWidth, 0, false);
   }
 
-  public BulletSpan(int bulletRadius, int gapWidth) {
-    super(gapWidth);
-    this.bulletRadius = bulletRadius;
-    this.gapWidth = gapWidth;
-    this.color = 0;
+  public BulletSpan(final int bulletRadius, final int gapWidth, final int color) {
+    this(bulletRadius, gapWidth, color, true);
   }
 
-  public BulletSpan(int bulletRadius, int gapWidth, int color) {
-    super(gapWidth, color);
-    this.bulletRadius = bulletRadius;
-    this.gapWidth = gapWidth;
-    this.color = color;
-    mWantColor = true;
+  public BulletSpan(final int bulletRadius, final int gapWidth, final int color, final boolean wantColor) {
+    mBulletRadius = bulletRadius;
+    mGapWidth = gapWidth;
+    mColor = color;
+    mWantColor = wantColor;
   }
 
-  public BulletSpan(Parcel src) {
-    super(src);
-    this.bulletRadius = src.readInt();
-    this.gapWidth = src.readInt();
-    this.color = src.readInt();
+  public final int getBulletRadius() {
+    return mBulletRadius;
   }
 
-  @Override
+  public final int getGapWidth() {
+    return mGapWidth;
+  }
+
+  public final int getColor() {
+    return mColor;
+  }
+
+  public final boolean isWantColor() {
+    return mWantColor;
+  }
+
   public int getLeadingMargin(boolean first) {
-    return 3 * bulletRadius + gapWidth;
+    return mBulletRadius + 2 * mGapWidth;
   }
 
-  @Override
   public void drawLeadingMargin(Canvas c, Paint p, int x, int dir,
-      int top, int baseline, int bottom, CharSequence text, int start, int end,
+      int top, int baseline, int bottom,
+      CharSequence text, int start, int end,
       boolean first, Layout l) {
+
+    x += getGapWidth();
+
     if (((Spanned) text).getSpanStart(this) == start) {
       Paint.Style style = p.getStyle();
-      int oldcolor = 0;
+      int oldColor = 0;
 
       if (mWantColor) {
-        oldcolor = p.getColor();
-        p.setColor(color);
+        oldColor = p.getColor();
+        p.setColor(mColor);
       }
 
       p.setStyle(Paint.Style.FILL);
@@ -96,19 +97,19 @@ public class BulletSpan extends android.text.style.BulletSpan {
         if (sBulletPath == null) {
           sBulletPath = new Path();
           // Bullet is slightly better to avoid aliasing artifacts on mdpi devices.
-          sBulletPath.addCircle(0.0f, 0.0f, 1.2f * bulletRadius, Direction.CW);
+          sBulletPath.addCircle(0.0f, 0.0f, 1.0f * mBulletRadius, Direction.CW);
         }
 
         c.save();
-        c.translate(x + dir * 2 * bulletRadius, (top + bottom) / 2.0f);
+        c.translate(x + dir * mBulletRadius, (top + bottom) / 2.0f);
         c.drawPath(sBulletPath, p);
         c.restore();
       } else {
-        c.drawCircle(x + dir * bulletRadius, (top + bottom) / 2.0f, bulletRadius, p);
+        c.drawCircle(x + dir * mBulletRadius, (top + bottom) / 2.0f, mBulletRadius, p);
       }
 
       if (mWantColor) {
-        p.setColor(oldcolor);
+        p.setColor(oldColor);
       }
 
       p.setStyle(style);
