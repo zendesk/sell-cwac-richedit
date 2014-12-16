@@ -71,10 +71,12 @@ public class BulletSpan implements LeadingMarginSpan {
     return mWantColor;
   }
 
+  @Override
   public int getLeadingMargin(boolean first) {
     return mBulletRadius + 2 * mGapWidth;
   }
 
+  @Override
   public void drawLeadingMargin(Canvas c, Paint p, int x, int dir,
       int top, int baseline, int bottom,
       CharSequence text, int start, int end,
