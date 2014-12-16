@@ -54,15 +54,13 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
   public final void applyToSelection(final Editable s, final Selection selection, final ListSpan.Type type) {
 
     int start = fixParagraphBoundaries(s, selection.start, -1);
-
-    removeListMarks(s, selection);
+    int end = fixParagraphBoundaries(s, selection.isEmpty() ? selection.end + 1 : selection.end, 1);
+    removeListMarks(s, new Selection(start, end));
 
     if (type != null) {
       final ListSpan span = type == ListSpan.Type.ORDERED
           ? new OrderedListSpan()
           : new UnorderedListSpan();
-
-      int end = fixParagraphBoundaries(s, selection.isEmpty() ? selection.end + 1 : selection.end, 1);
 
       s.setSpan(span, start, end, SPAN_PARAGRAPH);
       applyListItemSpan(s, new Selection(start, end), span);
