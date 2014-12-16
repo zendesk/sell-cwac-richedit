@@ -67,10 +67,10 @@ public class Selection {
   }
 
   public final void setStart(final int start) {
-    this.start = start;
+    this.start = (start < 0) ? 0 : start;
   }
 
   public final void setEnd(final int end) {
-    this.end = end;
+    this.end = (end < 0) ? 0 : end;
   }
 }
