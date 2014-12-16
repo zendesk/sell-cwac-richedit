@@ -642,7 +642,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
     @Override
     public final void onTextRemoved(final Editable s, final String removed, final int pos) {
-      if (removed.equals("\n")) {
+      if (removed.equals("\n") || (TextUtils.isEmpty(getAddedText()) && removed.contains("\n"))) {
         recreateBulletList(s, pos + 1);
       }
     }
