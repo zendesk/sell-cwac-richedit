@@ -7,7 +7,6 @@ import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -344,60 +343,6 @@ public class EffectsHandler {
   public static void applySingleImageSpan(final Spannable text, final int start, final int end, final String source, final Integer maxWidth, final Drawable drawable) {
     drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
     text.setSpan((maxWidth == null) ? new ImageSpan(drawable, source) : new ResizableImageSpan(drawable, source, maxWidth), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-  }
-
-  public static void extendSelectionToTheLineWidth(final CharSequence str, final Selection selection) {
-    // in case when we have partly selected the line
-    // we need to start the list from it's beginning
-    if (selection.start > 0 && selection.start < str.length()) {
-      for (int i = selection.start; i >= 0; i--) {
-        if (str.charAt(i) == '\n') {
-          if (i == selection.start) {
-            continue;
-          }
-          selection.setStart((i == selection.start) ? i : i + 1);
-          break;
-        }
-        if (i == 0) {
-          selection.setStart(0);
-        }
-      }
-    }
-
-    // the same approach we will use for the end of selection
-    for (int i = selection.end; i < str.length(); i++) {
-      if (str.charAt(i) == '\n') {
-        selection.setEnd(i);
-        break;
-      }
-      if (i == str.length() - 1) {
-        selection.setEnd(str.length() - 1);
-      }
-    }
-  }
-
-  public static void removeEmptyLines(final Editable str, final Selection selection) {
-
-    // EXAMPLE:
-    //
-    // The list for
-    // aaa\n
-    // \n
-    // bbb\n
-    // \n
-    // ccc\n
-    //
-    // will look like
-    // * aaa\n
-    // * bbb\n
-    // * ccc\n
-
-    for (int i = selection.start; i < selection.end; i++) {
-      if ((str.charAt(i) == '\n') && (str.charAt(i+1) == '\n')) {
-        str.replace(i, i + 1, "");
-        selection.end--;
-      }
-    }
   }
 
   public static String buildImageAnchor(final String source) {

@@ -1,21 +1,17 @@
 package com.commonsware.cwac.richedit;
 
-import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
-import static android.text.Spanned.SPAN_EXCLUSIVE_INCLUSIVE;
+import static android.text.Spanned.SPAN_PARAGRAPH;
 
-import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan.Type;
 import com.futuresimple.base.richedit.text.style.NumberSpan;
 import com.futuresimple.base.richedit.text.style.OrderedListSpan;
 import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
-import com.futuresimple.base.richedit.text.style.util.SpansUtil;
 
 import android.text.Editable;
 import android.text.Spannable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,37 +24,54 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
 
   @Override
   ListSpan.Type valueInSelection(final RichEditText editor) {
-    final List<ListSpan> effects = getAllEffectsFrom(editor.getText(), new Selection(editor));
-    if (effects.isEmpty()) {
+    final Selection selection = new Selection(editor);
+    final List<ListSpan> effects = getAllEffectsFrom(editor.getText(), selection);
+    if (effects.isEmpty() || (selection.isEmpty() && editor.getText().getSpanEnd(effects.get(effects.size() - 1)) == selection.end)) {
       return null;
     } else {
       return effects.get(0).getListType();
     }
   }
 
-  @Override
-  void applyToSelection(final RichEditText editor, final ListSpan.Type listSpan) {
-    final Selection selection = new Selection(editor);
-    final Editable str = editor.getText();
+  private int fixParagraphBoundaries(final Editable s, int pos, final int increment) {
+    if (pos > 0 && pos < s.length()) {
+      final int anchor = (increment > 0) ? s.length() : 0;
+      for (;;) {
+        if (s.charAt(pos - 1) == '\n') {
+          break;
+        } else {
+          pos += increment;
+          if (pos == anchor) {
+            break;
+          }
+        }
+      }
+    }
 
-    // remove empty lines inside selection
-    EffectsHandler.removeEmptyLines(str, selection);
+    return pos;
+  }
 
-    // select all lines from begin to the end
-    EffectsHandler.extendSelectionToTheLineWidth(str, selection);
+  public final void applyToSelection(final Editable s, final Selection selection, final ListSpan.Type type) {
 
-    removeListSpans(selection, str);
+    int start = fixParagraphBoundaries(s, selection.start, -1);
 
-    if (listSpan != null) {
-      final ListSpan span = listSpan == ListSpan.Type.ORDERED
+    removeListMarks(s, selection);
+
+    if (type != null) {
+      final ListSpan span = type == ListSpan.Type.ORDERED
           ? new OrderedListSpan()
           : new UnorderedListSpan();
 
-      str.setSpan(span, selection.start, selection.end,
-          selection.isEmpty() ? SPAN_EXCLUSIVE_INCLUSIVE : SPAN_EXCLUSIVE_EXCLUSIVE
-      );
-      applyListItemSpan(str, selection, span);
+      int end = fixParagraphBoundaries(s, selection.isEmpty() ? selection.end + 1 : selection.end, 1);
+
+      s.setSpan(span, start, end, SPAN_PARAGRAPH);
+      applyListItemSpan(s, new Selection(start, end), span);
     }
+  }
+
+  @Override
+  void applyToSelection(final RichEditText editor, final ListSpan.Type listSpan) {
+    applyToSelection(editor.getText(), new Selection(editor), listSpan);
   }
 
   @Override
@@ -75,35 +88,29 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     return Arrays.asList(text.getSpans(selection.start, selection.end, ListSpan.class));
   }
 
-  private static void removeListMarks(final Spannable str, final Selection selection) {
+  public static void removeListMarks(final Spannable str, final Selection selection) {
     final List<ListSpan> lists = getAllListMarks(str, selection);
     for (final ListSpan span : lists) {
       str.removeSpan(span);
+      for (final Object item : span.getItems()) {
+        str.removeSpan(item);
+      }
     }
   }
 
-  private void removeListSpans(final Selection selection, final Spannable str) {
-    removeListMarks(str, selection);
+  private static void applyItemSpan(final Spannable str, final int start, final int end, final ListSpan span, final int spanType) {
+    if (end <= str.getSpanEnd(span)) {
+      final Object itemSpan =
+          (span.getListType() == Type.ORDERED)
+              ? new NumberSpan(OrderedListSpan.getNextListItemIndex())
+              : (span.getListType() == Type.UNORDERED)
+                  ? new BulletSpan()
+                  : null;
 
-    for (final BulletSpan span : str.getSpans(selection.start, selection.end, BulletSpan.class)) {
-      str.removeSpan(span);
-    }
-
-    for (final NumberSpan span : str.getSpans(selection.start, selection.end, NumberSpan.class)) {
-      str.removeSpan(span);
-    }
-  }
-
-  private void applyItemSpan(final Spannable str, final int start, final int end, final ListSpan span, final int spanType) {
-    final Object itemSpan =
-        (span.getListType() == Type.ORDERED)
-            ? new NumberSpan(OrderedListSpan.getNextListItemIndex())
-            : (span.getListType() == Type.UNORDERED)
-                ? new BulletSpan()
-                : null;
-
-    if (itemSpan != null) {
-      str.setSpan(itemSpan, start, end, spanType);
+      if (itemSpan != null) {
+        str.setSpan(itemSpan, start, end, spanType);
+        span.addItem(itemSpan);
+      }
     }
   }
 
@@ -113,70 +120,21 @@ public class ListEffect extends Effect<ListSpan.Type, ListSpan> {
     }
 
     if (selection.isEmpty()) {
-      applyItemSpan(str, selection.start, selection.end, span, SPAN_EXCLUSIVE_INCLUSIVE);
+      applyItemSpan(str, selection.start, selection.end + 1, span, SPAN_PARAGRAPH);
     } else {
       int start = selection.start;
       int end = selection.end;
 
-      if (end >= str.length()) {
-        end = str.length() - 1;
-      }
+      int lookup = (end > 0 && str.charAt(end - 1) == '\n')
+          ? end - 1 : end;
 
-      for (int i = start; i <= end; i++) {
-        if (str.charAt(i) == '\n' || i == end) {
-          applyItemSpan(str, start, i, span, SPAN_EXCLUSIVE_EXCLUSIVE);
+      for (int i = start; i <= lookup && i < str.length(); i++) {
+        if (str.charAt(i) == '\n') {
+          applyItemSpan(str, start, i + 1, span, SPAN_PARAGRAPH);
           start = i + 1;
         }
       }
     }
   }
 
-  public static void sanitizeBullets(final Spannable s, final Selection selection) {
-    // remove bullets if there is no "\n" between them
-    final List<BulletSpan> bullets = SpansUtil.getSpansByOrder(s, new Selection(0, selection.end), BulletSpan.class);
-    if (bullets.size() > 1) {
-      final BulletSpan beforeLast = bullets.get(bullets.size() - 2);
-      final BulletSpan last = bullets.get(bullets.size() - 1);
-      final int start = s.getSpanStart(beforeLast);
-      final int end = s.getSpanEnd(last);
-      if (!s.toString().substring(start, end).contains("\n")) {
-        s.removeSpan(last);
-      }
-    }
-  }
-
-  public static void sanitizeBulletLists(final Spannable str) {
-    removeListMarks(str, new Selection(0, str.length()));
-
-    final List<BulletSpan> bullets = SpansUtil.getSpansByOrder(str, new Selection(0, str.length()), BulletSpan.class);
-
-    final List<Integer> starts = new ArrayList<>();
-    final List<Integer> ends = new ArrayList<>();
-
-    if (bullets.size() > 0) {
-      if (bullets.size() == 1) {
-        str.setSpan(new UnorderedListSpan(), str.getSpanStart(bullets.get(0)), str.getSpanEnd(bullets.get(0)), SPAN_EXCLUSIVE_EXCLUSIVE);
-      } else {
-        for (int i = 0; i < bullets.size(); i++) {
-          if (i == 0) {
-            starts.add(str.getSpanStart(bullets.get(i)));
-          } else if (i == bullets.size() - 1) {
-            ends.add(str.getSpanEnd(bullets.get(i)));
-          } else {
-            final int currentStart = str.getSpanStart(bullets.get(i));
-            final int previousEnd = str.getSpanEnd(bullets.get(i - 1));
-            if (currentStart - previousEnd > 1) {
-              ends.add(previousEnd);
-              starts.add(currentStart);
-            }
-          }
-        }
-      }
-    }
-
-    // starts and ends sizes has to be equal
-    for (int k = 0; k < ends.size(); k++) {
-      str.setSpan(new UnorderedListSpan(), starts.get(k), ends.get(k), SPAN_EXCLUSIVE_EXCLUSIVE);
-    }
-  }
 }
