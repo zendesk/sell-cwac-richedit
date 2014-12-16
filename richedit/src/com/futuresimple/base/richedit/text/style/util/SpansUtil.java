@@ -24,7 +24,11 @@ public class SpansUtil {
   }
 
   public static <T> T getLastSpanAt(final Spannable s, final Selection selection, final Class<T> kind) {
-    final List<T> spans = getSpansByOrder(s, selection, kind);
+    return getLastSpanAt(s, selection.start, selection.end, kind);
+  }
+
+  public static <T> T getLastSpanAt(final Spannable s, final int start, final int end, final Class<T> kind) {
+    final List<T> spans = getSpansByOrder(s, new Selection(start, end), kind);
     return spans.isEmpty() ? null : spans.get(spans.size() - 1);
   }
 
