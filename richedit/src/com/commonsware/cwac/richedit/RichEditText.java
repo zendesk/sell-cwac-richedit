@@ -614,7 +614,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
     @Override
     public final void onTextAdded(final Editable s, final String added, final int pos) {
-      if (added.contains("\n") || (!TextUtils.isEmpty(getRemovedText()) && getRemovedText().contains("\n"))) {
+      if (added.contains("\n") || (getRemovedText() != null && getRemovedText().length() > 1 && getRemovedText().contains("\n"))) {
         final int listBegin = recreateBulletList(s, pos);
         if (listBegin >= 0) {
           final ListSpan list = SpansUtil.getLastSpanAt(s, listBegin, listBegin, UnorderedListSpan.class);
