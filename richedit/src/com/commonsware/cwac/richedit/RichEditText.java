@@ -270,6 +270,19 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
     return(effect.valueInSelection(this));
   }
 
+  private void refreshSelection() {
+    if (selectionListener != null) {
+      ArrayList<Effect<?, ?>> effects=new ArrayList<>();
+
+      for (Effect<?, ?> effect : EFFECTS) {
+        if (effect.existsInSelection(this)) {
+          effects.add(effect);
+        }
+      }
+      selectionListener.onSelectionChanged(getSelectionStart(), getSelectionEnd(), effects);
+    }
+  }
+
   /*
    * If the effect is presently applied to the current
    * selection, removes it; if the effect is not presently
@@ -278,16 +291,7 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
   public void toggleEffect(Effect<Boolean, ?> effect) {
     if (!isSelectionChanging) {
       effect.applyToSelection(this, !effect.valueInSelection(this));
-      if (selectionListener != null) {
-        ArrayList<Effect<?, ?>> effects=new ArrayList<>();
-
-        for (Effect<?, ?> effec : EFFECTS) {
-          if (effec.existsInSelection(this)) {
-            effects.add(effec);
-          }
-        }
-        selectionListener.onSelectionChanged(getSelectionStart(), getSelectionEnd(), effects);
-      }
+      refreshSelection();
     }
   }
 
@@ -311,6 +315,8 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
       } else {
         applyEffect(LIST, null);
       }
+
+      refreshSelection();
     }
   }
 
