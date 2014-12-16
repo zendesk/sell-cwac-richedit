@@ -14,15 +14,14 @@
 
 package com.commonsware.cwac.richedit;
 
-import static android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE;
-import static android.text.Spanned.SPAN_EXCLUSIVE_INCLUSIVE;
-
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.EffectsHandler.ImageAnchor;
-import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
+import com.futuresimple.base.richedit.text.style.ListSpan.Type;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
+import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
+import com.futuresimple.base.richedit.text.style.util.SpansComparator;
 import com.futuresimple.base.richedit.text.style.util.SpansUtil;
 import com.futuresimple.base.richedit.text.watcher.BaseRichTextWatcher;
 import com.futuresimple.base.richedit.ui.CustomSpannableEditText;
@@ -51,6 +50,7 @@ import android.util.AttributeSet;
 import android.view.KeyEvent;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -292,17 +292,21 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
   }
 
   public final void toggleList(final ListSpan.Type listType) {
-    // android-specific whole!
-    // we cannot set any graphic span on empty text
-    // so we are adding new line on toggling list
-    // (and than we have to set the cursor back)
-    if (TextUtils.isEmpty(getText())) {
-      append("\n");
-      setSelection(0);
-    }
-
     if (!isSelectionChanging) {
       if (LIST.valueInSelection(this) == null) {
+
+        // android-specific whole!
+        // we cannot set any graphic span on empty text
+        // so we are adding new line on toggling list
+        // (and than we have to set the cursor back)
+        if (TextUtils.isEmpty(getText())) {
+          append("\n");
+          setSelection(0);
+        } else if (getSelectionEnd() == getText().length()) {
+          append("\n");
+          setSelection(getText().length() - 1);
+        }
+
         applyEffect(LIST, listType);
       } else {
         applyEffect(LIST, null);
@@ -584,89 +588,56 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
 
   class BulletListTextWatcher extends BaseRichTextWatcher {
 
-    private boolean mOpenNewItem;
-
-    @Override
-    public final void beforeTextRemoving(final Spannable s, final String toRemove, final int position) {
-      final BulletSpan bullet = SpansUtil.getLastSpanAt(s, new Selection(position, position + toRemove.length() - 1), BulletSpan.class);
-      if ((bullet != null) && (s.getSpanEnd(bullet) - s.getSpanStart(bullet) == toRemove.length())) {
-        s.removeSpan(bullet);
-        mOpenNewItem = true;
-      } else {
-        mOpenNewItem = false;
-      }
-    }
-
-    @Override
-    public final void onTextRemoved(final Editable s, final String removed, final int start) {
-      if (removed.equals("\n")) {
-        final Selection selection = new Selection(RichEditText.this);
-        EffectsHandler.extendSelectionToTheLineWidth(s, selection);
-        final BulletSpan bullet = SpansUtil.getLastSpanAt(s, selection, BulletSpan.class);
-        if (bullet != null) {
-          s.removeSpan(bullet);
-          applyBullet(s, selection);
-        }
-      } else if (mOpenNewItem && TextUtils.isEmpty(getAddedText())) {
-        final int cursor = (new Selection(RichEditText.this)).end;
-        s.setSpan(new BulletSpan(), cursor, cursor, SPAN_EXCLUSIVE_INCLUSIVE);
-      }
-    }
-
-    private int calcNewLinesIn(final String str) {
-      int idx = str.indexOf("\n");
-      int count = 0;
-      while (idx >= 0) {
-        count++;
-        idx = str.indexOf("\n", idx + 1);
-      }
-
-      return count;
-    }
-
-    @Override
-    public final void onTextAdded(final Editable s, final String added, final int start) {
-      final Selection selection = new Selection(RichEditText.this);
-      final BulletSpan lastBullet = SpansUtil.getLastSpanAt(s, new Selection(0, start + added.length()), BulletSpan.class);
-      if (lastBullet != null) {
-        ListEffect.sanitizeBullets(s, selection);
-        if (added.equals("\n")) {
-          final String between = s.toString().substring(s.getSpanEnd(lastBullet), selection.start);
-          if (calcNewLinesIn(between) <= 1) {
-            handleNewLineAdded(s, selection, lastBullet);
-          }
+    private int recreateBulletList(final Editable s, final int pos) {
+      final List<UnorderedListSpan> lists = SpansUtil.getSpansByOrder(s, new Selection(pos, pos), UnorderedListSpan.class);
+      if (!lists.isEmpty()) {
+        final int start = s.getSpanStart(lists.get(0));
+        final int end = s.getSpanEnd(lists.get(lists.size() - 1));
+        final Selection selection = new Selection(start, end);
+        if (start == end) {
+          ListEffect.removeListMarks(s, selection);
         } else {
-          handleListItemEditing(s, selection, lastBullet);
+          ((ListEffect) LIST).applyToSelection(s, selection, Type.UNORDERED);
+        }
+
+        return selection.start;
+      }
+
+      return -1;
+    }
+
+    @Override
+    public final void onTextAdded(final Editable s, final String added, final int pos) {
+      if (added.contains("\n")) {
+        final int listBegin = recreateBulletList(s, pos);
+        if (listBegin >= 0) {
+          final ListSpan list = SpansUtil.getLastSpanAt(s, listBegin, listBegin, UnorderedListSpan.class);
+          if (list != null) {
+            final int itemsCnt = list.getItems().size();
+            if (itemsCnt > 1) {
+              Collections.sort(list.getItems(), new SpansComparator(s));
+              final Object prevBullet = list.getItems().get(itemsCnt - 2);
+              final Object lastBullet = list.getItems().get(itemsCnt - 1);
+              final int prevLen = s.getSpanEnd(prevBullet) - s.getSpanStart(prevBullet);
+              final int lastLen = s.getSpanEnd(lastBullet) - s.getSpanStart(lastBullet);
+              if (prevLen == 1 && lastLen == 1) {
+                // two empty items
+                if (itemsCnt == 2) {
+                  ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
+                } else {
+                  ((ListEffect) LIST).applyToSelection(s, new Selection(listBegin, s.getSpanEnd(list.getItems().get(itemsCnt - 3))), Type.UNORDERED);
+                }
+              }
+            }
+          }
         }
       }
     }
 
-    private void applyBullet(final Editable s, final Selection selection) {
-      s.setSpan(
-          new BulletSpan(),
-          selection.start,
-          selection.end,
-          (selection.isEmpty())
-              ? SPAN_EXCLUSIVE_INCLUSIVE
-              : SPAN_EXCLUSIVE_EXCLUSIVE
-      );
-    }
-
-    private void handleListItemEditing(final Editable s, final Selection selection, final BulletSpan bullet) {
-      final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(bullet));
-      if (EffectsHandler.isOpenFromTheRight(mode)) {
-        EffectsHandler.extendSelectionToTheLineWidth(s, selection);
-        s.removeSpan(bullet);
-        applyBullet(s, selection);
-      }
-    }
-
-    private void handleNewLineAdded(final Spannable s, final Selection selection, final BulletSpan lastBullet) {
-      final int mode = EffectsHandler.getEffectRelatedFlag(s.getSpanFlags(lastBullet));
-      if (EffectsHandler.isOpenFromTheRight(mode)) {
-        s.removeSpan(lastBullet);
-      } else {
-        s.setSpan(new BulletSpan(), selection.start, selection.end, SPAN_EXCLUSIVE_INCLUSIVE);
+    @Override
+    public final void onTextRemoved(final Editable s, final String removed, final int pos) {
+      if (removed.equals("\n")) {
+        recreateBulletList(s, pos + 1);
       }
     }
 
