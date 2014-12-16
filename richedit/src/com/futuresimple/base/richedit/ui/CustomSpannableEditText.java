@@ -3,6 +3,7 @@ package com.futuresimple.base.richedit.ui;
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.HtmlParsingListener;
 import com.futuresimple.base.richedit.text.style.BulletSpan;
+import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
 import com.futuresimple.base.richedit.text.style.URLSpan;
 import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
 import com.nostra13.universalimageloader.core.ImageLoader;
@@ -77,6 +78,12 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     }
   }
 
+  private void applyUnderlines(final List<UnderlineHolder> underlineHolders) {
+    for (final UnderlineHolder underlineHolder : underlineHolders) {
+      getText().setSpan(new RichTextUnderlineSpan(), underlineHolder.getStart(), underlineHolder.getEnd(), underlineHolder.getMode());
+    }
+  }
+
   @Override
   public void onRestoreInstanceState(final Parcelable state) {
     if (!(state instanceof CustomSpansState)) {
@@ -91,6 +98,7 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
     applyBulletLists(customState.getBulletListHolders());
     applyLinks(customState.getLinkHolders());
+    applyUnderlines(customState.getUnderlineHolders());
 
     mLastState = null;
     mStateRestored = true;
@@ -130,15 +138,27 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     return linkHolders;
   }
 
+  private List<UnderlineHolder> removeAllUnderlines() {
+    final List<UnderlineHolder> underlineHolders = new ArrayList<>();
+    final RichTextUnderlineSpan[] underlines = getText().getSpans(0, getText().length(), RichTextUnderlineSpan.class);
+    for (final RichTextUnderlineSpan underline : underlines) {
+      underlineHolders.add(new UnderlineHolder(getText().getSpanFlags(underline), getText().getSpanStart(underline), getText().getSpanEnd(underline)));
+      getText().removeSpan(underline);
+    }
+
+    return underlineHolders;
+  }
+
   @Override
   public Parcelable onSaveInstanceState() {
     // do not call removeAllLinks() inline!!!
     // All "removing" operations have to be done before calling super.onSaveInstanceState() !
     final List<BulletListHolder> bulletListHolders = removeAllBulletLists();
     final List<LinkHolder> linkHolders = removeAllLinks();
+    final List<UnderlineHolder> underlineHolders = removeAllUnderlines();
 
     mStateRestored = false;
-    mLastState = new CustomSpansState(super.onSaveInstanceState(), bulletListHolders, linkHolders);
+    mLastState = new CustomSpansState(super.onSaveInstanceState(), bulletListHolders, linkHolders, underlineHolders);
     return mLastState;
   }
 
@@ -193,15 +213,17 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
     private final List<BulletListHolder> mBulletListHolders = new ArrayList<>();
     private final List<LinkHolder> mLinkHolders = new ArrayList<>();
+    private final List<UnderlineHolder> mUnderlineHolders = new ArrayList<>();
 
     public CustomSpansState(final Parcel source) {
       super(source);
 
       readBulletLists(source);
       readLinks(source);
+      readUnderlines(source);
     }
 
-    public CustomSpansState(final Parcelable superState, final List<BulletListHolder> bulletListHolders, final List<LinkHolder> linkHolders) {
+    public CustomSpansState(final Parcelable superState, final List<BulletListHolder> bulletListHolders, final List<LinkHolder> linkHolders, final List<UnderlineHolder> underlineHolders) {
       super(superState);
 
       if (bulletListHolders != null) {
@@ -210,6 +232,10 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
       if (linkHolders != null) {
         mLinkHolders.addAll(linkHolders);
+      }
+
+      if (underlineHolders != null) {
+        mUnderlineHolders.addAll(underlineHolders);
       }
     }
 
@@ -255,12 +281,29 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
       }
     }
 
+    private void readUnderlines(final Parcel source) {
+      final int underlinesCount = source.readInt();
+      if (underlinesCount > 0) {
+        for (int i = 0; i < underlinesCount; i++) {
+          mUnderlineHolders.add(new UnderlineHolder(
+              source.readInt(),
+              source.readInt(),
+              source.readInt()
+          ));
+        }
+      }
+    }
+
     public final List<BulletListHolder> getBulletListHolders() {
       return mBulletListHolders;
     }
 
     public final List<LinkHolder> getLinkHolders() {
       return mLinkHolders;
+    }
+
+    public final List<UnderlineHolder> getUnderlineHolders() {
+      return mUnderlineHolders;
     }
 
     private void writeBulletLists(final Parcel destination) {
@@ -291,12 +334,22 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
       }
     }
 
+    private void writeUnderlines(final Parcel destination) {
+      destination.writeInt(mUnderlineHolders.size());
+      for (final UnderlineHolder underlineHolder : mUnderlineHolders) {
+        destination.writeInt(underlineHolder.getMode());
+        destination.writeInt(underlineHolder.getStart());
+        destination.writeInt(underlineHolder.getEnd());
+      }
+    }
+
     @Override
     public void writeToParcel(final Parcel destination, final int flags) {
       super.writeToParcel(destination, flags);
 
       writeBulletLists(destination);
       writeLinks(destination);
+      writeUnderlines(destination);
     }
 
     public static final Parcelable.Creator<CustomSpansState> CREATOR =
@@ -408,6 +461,20 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
 
     public final List<BulletHolder> getBulletHolders() {
       return mBulletHolders;
+    }
+  }
+
+  static final class UnderlineHolder extends SpanHolder {
+
+    private int mMode;
+
+    public UnderlineHolder(final int mode, final int start, final int end) {
+      super(start, end);
+      mMode = mode;
+    }
+
+    public final int getMode() {
+      return mMode;
     }
   }
 }
