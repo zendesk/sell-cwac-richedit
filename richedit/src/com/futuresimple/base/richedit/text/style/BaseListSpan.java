@@ -16,4 +16,9 @@ public abstract class BaseListSpan<TItem> implements ListSpan<TItem> {
   public final List<TItem> getItems() {
     return mItems;
   }
+
+  @Override
+  public final int size() {
+    return mItems.size();
+  }
 }

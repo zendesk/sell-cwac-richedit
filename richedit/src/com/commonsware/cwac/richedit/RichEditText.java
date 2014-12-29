@@ -16,6 +16,7 @@ package com.commonsware.cwac.richedit;
 
 import com.futuresimple.base.richedit.text.EffectsHandler;
 import com.futuresimple.base.richedit.text.EffectsHandler.ImageAnchor;
+import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan;
 import com.futuresimple.base.richedit.text.style.ListSpan.Type;
 import com.futuresimple.base.richedit.text.style.ResizableImageSpan;
@@ -612,30 +613,69 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
       return -1;
     }
 
+    private void breakListBeforeSelection(final ListEffect listEffect, final Editable s, final SpanBounds afterSelection, final SpanBounds lastBullet) {
+      listEffect.applyToSelection(s, new Selection(afterSelection.getStart(), lastBullet.getEnd()), Type.UNORDERED);
+    }
+
+    private void breakListAfterSelection(final ListEffect listEffect, final Editable s, final int listBegin, final SpanBounds beforeSelection) {
+      listEffect.applyToSelection(s, new Selection(listBegin, beforeSelection.getEnd()), Type.UNORDERED);
+    }
+
+    private void handlePossibleListBreak(final Editable s, final int listBegin, final UnorderedListSpan list) {
+      if (list != null) {
+        if (list.size() > 1) {
+          Collections.sort(list.getItems(), new SpansComparator<>(s));
+          final List<Integer> emptyPair = new ArrayList<>();
+          for (int i = 0; i < list.size() - 1; i++) {
+            final BulletSpan currentBullet = list.getItems().get(i);
+            final BulletSpan nextBullet = list.getItems().get(i + 1);
+            final int currentLen = s.getSpanEnd(currentBullet) - s.getSpanStart(currentBullet);
+            final int nextLen = s.getSpanEnd(nextBullet) - s.getSpanStart(nextBullet);
+            if (currentLen == 1 && nextLen == 1) {
+              if (list.size() == 2) {
+                ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
+                return;
+              } else {
+                emptyPair.add(i);
+                emptyPair.add(i + 1);
+                break;
+              }
+            }
+          }
+
+          if (!emptyPair.isEmpty()) {
+            // NOTE !!!
+            // We have to retrieve those three items' bounds before list removing.
+            final SpanBounds beforeSelection = (emptyPair.get(0) > 0) ? new SpanBounds(s, list.getItems().get(emptyPair.get(0) - 1)) : null;
+            final SpanBounds afterSelection = (emptyPair.get(1) < list.size() - 1) ? new SpanBounds(s, list.getItems().get(emptyPair.get(1) + 1)) : null;
+            final SpanBounds lastBullet = new SpanBounds(s, list.getItems().get(list.size() - 1));
+
+            ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
+            final ListEffect listEffect = (ListEffect) LIST;
+
+            if (beforeSelection == null) {
+              // empty items at the beginning
+              breakListBeforeSelection(listEffect, s, afterSelection, lastBullet);
+            } else if (afterSelection == null) {
+              // empty items at the end
+              breakListAfterSelection(listEffect, s, listBegin, beforeSelection);
+            } else {
+              // empty items at the middle
+              breakListAfterSelection(listEffect, s, listBegin, beforeSelection);
+              breakListBeforeSelection(listEffect, s, afterSelection, lastBullet);
+            }
+          }
+        }
+      }
+    }
+
     @Override
     public final void onTextAdded(final Editable s, final String added, final int pos) {
       if (added.contains("\n") || (getRemovedText() != null && getRemovedText().length() > 1 && getRemovedText().contains("\n"))) {
         final int listBegin = recreateBulletList(s, pos);
-        if (listBegin >= 0) {
-          final ListSpan list = SpansUtil.getLastSpanAt(s, listBegin, listBegin, UnorderedListSpan.class);
-          if (list != null) {
-            final int itemsCnt = list.getItems().size();
-            if (itemsCnt > 1) {
-              Collections.sort(list.getItems(), new SpansComparator(s));
-              final Object prevBullet = list.getItems().get(itemsCnt - 2);
-              final Object lastBullet = list.getItems().get(itemsCnt - 1);
-              final int prevLen = s.getSpanEnd(prevBullet) - s.getSpanStart(prevBullet);
-              final int lastLen = s.getSpanEnd(lastBullet) - s.getSpanStart(lastBullet);
-              if (prevLen == 1 && lastLen == 1) {
-                // two empty items
-                if (itemsCnt == 2) {
-                  ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
-                } else {
-                  ((ListEffect) LIST).applyToSelection(s, new Selection(listBegin, s.getSpanEnd(list.getItems().get(itemsCnt - 3))), Type.UNORDERED);
-                }
-              }
-            }
-          }
+        if (listBegin >= 0 && added.length() == 1) {
+          final UnorderedListSpan list = SpansUtil.getLastSpanAt(s, listBegin, listBegin, UnorderedListSpan.class);
+          handlePossibleListBreak(s, listBegin, list);
         }
       }
     }
@@ -647,6 +687,24 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
       }
     }
 
+  }
+
+  static final class SpanBounds {
+    private final int mStart;
+    private final int mEnd;
+
+    public SpanBounds(final Spannable s, final Object span) {
+      mStart = s.getSpanStart(span);
+      mEnd = s.getSpanEnd(span);
+    }
+
+    public final int getStart() {
+      return mStart;
+    }
+
+    public final int getEnd() {
+      return mEnd;
+    }
   }
 
 }

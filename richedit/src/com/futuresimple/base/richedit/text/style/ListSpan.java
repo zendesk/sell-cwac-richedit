@@ -16,4 +16,5 @@ public interface ListSpan<TItem> {
 
   public void addItem(final TItem item);
   public List<TItem> getItems();
+  public int size();
 }
