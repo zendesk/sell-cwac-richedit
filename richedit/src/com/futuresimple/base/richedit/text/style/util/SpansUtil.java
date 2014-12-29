@@ -17,8 +17,12 @@ public class SpansUtil {
     }
   }
 
+  public static <T> List<T> getSpans(final Spannable s, final Selection selection, final Class<T> kind) {
+    return Arrays.asList(s.getSpans(selection.start, selection.end, kind));
+  }
+
   public static <T> List<T> getSpansByOrder(final Spannable s, final Selection selection, final Class<T> kind) {
-    final List<T> spansList = Arrays.asList(s.getSpans(selection.start, selection.end, kind));
+    final List<T> spansList = getSpans(s, selection, kind);
     Collections.sort(spansList, new SpansComparator<T>(s));
     return spansList;
   }
@@ -32,4 +36,7 @@ public class SpansUtil {
     return spans.isEmpty() ? null : spans.get(spans.size() - 1);
   }
 
+  public static int getSpanSize(final Spannable s, final Object span) {
+    return s.getSpanEnd(span) - s.getSpanStart(span);
+  }
 }
