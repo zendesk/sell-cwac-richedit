@@ -1,11 +1,6 @@
 package com.futuresimple.base.richedit.text.style;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class UnorderedListSpan implements ListSpan<BulletSpan> {
-
-  private final List<BulletSpan> mItems = new ArrayList<>();
+public class UnorderedListSpan extends BaseListSpan<BulletSpan> {
 
   @Override
   public Type getListType() {
@@ -17,13 +12,4 @@ public class UnorderedListSpan implements ListSpan<BulletSpan> {
     return new UnorderedListSpan();
   }
 
-  @Override
-  public final void addItem(final BulletSpan bulletSpan) {
-    mItems.add(bulletSpan);
-  }
-
-  @Override
-  public final List<BulletSpan> getItems() {
-    return mItems;
-  }
 }
