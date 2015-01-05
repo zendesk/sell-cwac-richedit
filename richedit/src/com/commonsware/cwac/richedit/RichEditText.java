@@ -626,21 +626,49 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
         if (list.size() > 1) {
           Collections.sort(list.getItems(), new SpansComparator<>(s));
           final List<Integer> emptyPair = new ArrayList<>();
-          for (int i = 0; i < list.size() - 1; i++) {
-            final BulletSpan currentBullet = list.getItems().get(i);
-            final BulletSpan nextBullet = list.getItems().get(i + 1);
-            final int currentLen = s.getSpanEnd(currentBullet) - s.getSpanStart(currentBullet);
-            final int nextLen = s.getSpanEnd(nextBullet) - s.getSpanStart(nextBullet);
-            if (currentLen == 1 && nextLen == 1) {
-              if (list.size() == 2) {
-                ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
-                return;
-              } else {
-                emptyPair.add(i);
-                emptyPair.add(i + 1);
-                break;
+
+          final int cursor = getSelectionEnd();
+          final BulletSpan lastBullet = SpansUtil.getLastSpanAt(s, cursor, cursor, BulletSpan.class);
+          if (lastBullet != null) {
+
+            int currIdx = -1;
+            int prevIdx = -1;
+            BulletSpan currentBullet = null;
+            BulletSpan previousBullet = null;
+            if (SpansUtil.getSpanSize(s, lastBullet) <= 1) {
+              currIdx = list.getItems().indexOf(lastBullet);
+              currentBullet = lastBullet;
+
+              prevIdx = currIdx - 1;
+              if (prevIdx >= 0) {
+                previousBullet = list.getItems().get(prevIdx);
+              }
+            } else {
+              currIdx = list.getItems().indexOf(lastBullet) - 1;
+              if (currIdx >= 0) {
+                currentBullet = list.getItems().get(currIdx);
+                prevIdx = list.getItems().indexOf(currentBullet) - 1;
+                if (prevIdx >= 0) {
+                  previousBullet = list.getItems().get(prevIdx);
+                }
               }
             }
+
+            if ((currIdx >= 0) && (prevIdx >= 0) && (currentBullet != null) && (previousBullet != null)) {
+              final int currLen = SpansUtil.getSpanSize(s, currentBullet);
+              final int prevLen = SpansUtil.getSpanSize(s, previousBullet);
+
+              if ((currLen == 1) && (prevLen == 1)) {
+                if (list.size() == 2) {
+                  ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
+                  return;
+                } else {
+                  emptyPair.add(prevIdx);
+                  emptyPair.add(currIdx);
+                }
+              }
+            }
+
           }
 
           if (!emptyPair.isEmpty()) {
@@ -648,21 +676,21 @@ public class RichEditText extends CustomSpannableEditText implements EditorActio
             // We have to retrieve those three items' bounds before list removing.
             final SpanBounds beforeSelection = (emptyPair.get(0) > 0) ? new SpanBounds(s, list.getItems().get(emptyPair.get(0) - 1)) : null;
             final SpanBounds afterSelection = (emptyPair.get(1) < list.size() - 1) ? new SpanBounds(s, list.getItems().get(emptyPair.get(1) + 1)) : null;
-            final SpanBounds lastBullet = new SpanBounds(s, list.getItems().get(list.size() - 1));
+            final SpanBounds lastItem = new SpanBounds(s, list.getItems().get(list.size() - 1));
 
             ListEffect.removeListMarks(s, new Selection(listBegin, listBegin));
             final ListEffect listEffect = (ListEffect) LIST;
 
             if (beforeSelection == null) {
               // empty items at the beginning
-              breakListBeforeSelection(listEffect, s, afterSelection, lastBullet);
+              breakListBeforeSelection(listEffect, s, afterSelection, lastItem);
             } else if (afterSelection == null) {
               // empty items at the end
               breakListAfterSelection(listEffect, s, listBegin, beforeSelection);
             } else {
               // empty items at the middle
               breakListAfterSelection(listEffect, s, listBegin, beforeSelection);
-              breakListBeforeSelection(listEffect, s, afterSelection, lastBullet);
+              breakListBeforeSelection(listEffect, s, afterSelection, lastItem);
             }
           }
         }

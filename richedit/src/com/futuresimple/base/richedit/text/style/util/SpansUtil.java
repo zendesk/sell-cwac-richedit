@@ -36,4 +36,7 @@ public class SpansUtil {
     return spans.isEmpty() ? null : spans.get(spans.size() - 1);
   }
 
+  public static int getSpanSize(final Spannable s, final Object span) {
+    return s.getSpanEnd(span) - s.getSpanStart(span);
+  }
 }
