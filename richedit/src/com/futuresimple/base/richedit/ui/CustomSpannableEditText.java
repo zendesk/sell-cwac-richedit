@@ -6,12 +6,9 @@ import com.futuresimple.base.richedit.text.style.BulletSpan;
 import com.futuresimple.base.richedit.text.style.RichTextUnderlineSpan;
 import com.futuresimple.base.richedit.text.style.URLSpan;
 import com.futuresimple.base.richedit.text.style.UnorderedListSpan;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.assist.FailReason;
-import com.nostra13.universalimageloader.core.assist.ImageSize;
-import com.nostra13.universalimageloader.core.assist.ViewScaleType;
-import com.nostra13.universalimageloader.core.imageaware.NonViewAware;
-import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Picasso.LoadedFrom;
+import com.squareup.picasso.Target;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -22,14 +19,13 @@ import android.os.Parcelable;
 import android.text.Spanned;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
-import android.view.View;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class CustomSpannableEditText extends FixedSelectionEditText implements ImageLoadingListener, HtmlParsingListener {
+public class CustomSpannableEditText extends FixedSelectionEditText implements HtmlParsingListener {
 
   private final Set<String> mImagesToLoad = new HashSet<>();
 
@@ -107,7 +103,7 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
   private List<BulletListHolder> removeAllBulletLists() {
     final List<BulletListHolder> bulletListHolders = new ArrayList<>();
     final UnorderedListSpan[] bulletLists = getText().getSpans(0, getText().length(), UnorderedListSpan.class);
-    for (final UnorderedListSpan bulletList: bulletLists) {
+    for (final UnorderedListSpan bulletList : bulletLists) {
       final BulletListHolder bulletListHolder = new BulletListHolder(getText().getSpanStart(bulletList), getText().getSpanEnd(bulletList));
       for (final BulletSpan bulletSpan : bulletList.getItems()) {
         bulletListHolder.addBulletHolder(new BulletHolder(
@@ -162,30 +158,6 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
     return mLastState;
   }
 
-  @Override
-  public final void onLoadingStarted(final String source, final View view) {
-    // nothing to do
-  }
-
-  @Override
-  public final void onLoadingFailed(final String source, final View view, final FailReason failReason) {
-    EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
-    nullLayouts();
-  }
-
-  @Override
-  public final void onLoadingComplete(final String source, final View view, final Bitmap bitmap) {
-    final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-    EffectsHandler.applyLoadedImageSpan(getText(), source, getMeasuredWidth(), drawable);
-    nullLayouts();
-  }
-
-  @Override
-  public final void onLoadingCancelled(final String source, final View view) {
-    EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), source);
-    nullLayouts();
-  }
-
   private void nullLayouts() {
     //This is ugly hack to call private method "nullLayouts" from TextView
     setEllipsize(TruncateAt.END);
@@ -200,10 +172,38 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements I
   @Override
   public final void onParsingFinished() {
     for (final String imageUri : mImagesToLoad) {
-      // 0x0 size means unknown
-      // also! do not pass uri parameter below (when creating NonViewAware object)
-      final NonViewAware nonViewAware = new NonViewAware(new ImageSize(0, 0), ViewScaleType.CROP);
-      ImageLoader.getInstance().displayImage(imageUri, nonViewAware, this);
+      Picasso
+          .with(getContext())
+          .load(imageUri)
+          .into(new Target() {
+            @Override
+            public void onBitmapLoaded(final Bitmap bitmap, LoadedFrom from) {
+              post(new Runnable() {
+                @Override
+                public void run() {
+                  final Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+                  EffectsHandler.applyLoadedImageSpan(getText(), imageUri, getMeasuredWidth(), drawable);
+                  nullLayouts();
+                }
+              });
+            }
+
+            @Override
+            public void onBitmapFailed(Drawable errorDrawable) {
+              post(new Runnable() {
+                @Override
+                public void run() {
+                  EffectsHandler.applyImageLoadingFailedImageSpan(getText(), getResources(), imageUri);
+                  nullLayouts();
+                }
+              });
+            }
+
+            @Override
+            public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+            }
+          });
     }
 
     mImagesToLoad.clear();
