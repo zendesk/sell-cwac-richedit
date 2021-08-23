@@ -23,7 +23,7 @@ android {
 }
 
 dependencies {
-  compile 'com.squareup.picasso:picasso:2.4.0'
+  implementation 'com.squareup.picasso:picasso:2.4.0'
 }
 
 apply from: '../../gradle-mvn-publish.gradle'
