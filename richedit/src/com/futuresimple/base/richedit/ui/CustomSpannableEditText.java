@@ -172,8 +172,7 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements H
   @Override
   public final void onParsingFinished() {
     for (final String imageUri : mImagesToLoad) {
-      Picasso
-          .with(getContext())
+      Picasso.get()
           .load(imageUri)
           .into(new Target() {
             @Override
@@ -189,7 +188,7 @@ public class CustomSpannableEditText extends FixedSelectionEditText implements H
             }
 
             @Override
-            public void onBitmapFailed(Drawable errorDrawable) {
+            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
               post(new Runnable() {
                 @Override
                 public void run() {
